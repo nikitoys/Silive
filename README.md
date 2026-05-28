@@ -65,6 +65,21 @@ Function mapping:
 
 The scorecard also shows missing functions and a rough viability class such as `weak_candidate`, `incomplete_proto_life_candidate`, `proto_life_candidate`, or `stable_proto_life_candidate`.
 
+## Search symbolic chains
+
+`silive search-chain` mutates a seed chain, evaluates every candidate with the same Level 2 scorecard, sorts by `viability_score`, prints the top candidates, and writes a CSV table.
+
+```bash
+silive search-chain \
+  --seed "Si-O-Si-O-Fe-O-Si" \
+  --rounds 1000 \
+  --top 20 \
+  --random-seed 42 \
+  --output outputs/chain_search.csv
+```
+
+The CSV includes each candidate chain, viability score, predicted functions, missing functions, symbolic properties, function scores, and mutation count.
+
 ## Install
 
 ```bash
@@ -209,7 +224,7 @@ pytest
 
 ## Continuous integration
 
-GitHub Actions runs tests on Python 3.10, 3.11, and 3.12. It also runs small `silive evaluate-chain`, `silive lab`, and `silive repair-study` smoke tests and uploads the generated outputs as workflow artifacts.
+GitHub Actions runs tests on Python 3.10, 3.11, and 3.12. It also runs small `silive evaluate-chain`, `silive search-chain`, `silive lab`, and `silive repair-study` smoke tests and uploads the generated outputs as workflow artifacts.
 
 ## What to test first
 
