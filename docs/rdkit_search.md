@@ -32,9 +32,10 @@ Rules:
 For every candidate, Silive runs:
 
 1. `evaluate_rdkit_molecule`;
-2. `detect_proto_genes`;
-3. `evaluate_proto_genome`;
-4. `candidate_score` ranking.
+2. `build_symbolic_graph`;
+3. `detect_proto_genes`;
+4. `evaluate_proto_genome`;
+5. `candidate_score` ranking.
 
 ## Candidate score
 
@@ -61,7 +62,13 @@ Columns:
 | `covered_functions` | minimal proto-genome functions covered |
 | `missing_functions` | missing minimal functions |
 | `detected_genes` | detected chemical proto-genes |
-| `symbolic_chain` | RDKit graph converted to symbolic chain |
+| `symbolic_chain` | legacy linear chain projection |
+| `topology_tags` | symbolic graph topology labels |
+| `backbone_length` | longest Si/O/P/Fe/Ni path length |
+| `ring_count` | graph ring count |
+| `fragment_count` | separated fragment count |
+| `network_score` | heuristic network density score |
+| `branching_score` | fraction of high-degree branch nodes |
 | `viability` | rough viability class |
 
 This search is a heuristic screen, not a claim of real chemical viability.
