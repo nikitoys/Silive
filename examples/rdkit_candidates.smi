@@ -1,0 +1,12 @@
+# molecule name
+[Si]O[Si] si_o_si_template
+[Si]O[Si]O[Fe] si_o_si_fe_catalyst
+[Si]O[Si]O[Ni] si_o_si_ni_catalyst
+[Si]OP(=O)(O)O si_o_p_repair
+[Si]O[Si]O[Fe]OP(=O)(O)O[Si] si_fe_p_combo
+[Si]O[Si]O[Ni]OP(=O)(O)O[Si] si_ni_p_combo
+[Si]1O[Si]O1 siloxane_ring
+[Si]O[Si].[Fe]O separated_fragments
+O=P(O)(O)O phosphate_only
+[Fe]O iron_oxide_only
+not_a_valid_smiles invalid_candidate
