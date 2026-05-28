@@ -53,6 +53,14 @@ jobs:
             echo "Proto-gene layer unavailable as expected in base CI"
           fi
 
+      - name: Run proto-genome command smoke test without optional dependency
+        run: |
+          if silive rdkit-genome-evaluate "[Si]O[Si]O[Fe]O[Si]"; then
+            echo "Proto-genome layer available"
+          else
+            echo "Proto-genome layer unavailable as expected in base CI"
+          fi
+
       - name: Run environment chemistry smoke test
         run: silive evaluate-chain "Si-O-Si-O-Fe-O-Si" --environment hydrothermal
 
