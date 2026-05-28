@@ -65,6 +65,14 @@ Function mapping:
 
 The scorecard also shows missing functions and a rough viability class such as `weak_candidate`, `incomplete_proto_life_candidate`, `proto_life_candidate`, or `stable_proto_life_candidate`.
 
+## Experimental RDKit layer
+
+See `docs/rdkit.md`.
+
+```bash
+pip install -e .[chem]
+silive rdkit-evaluate "[Si]O[Si]O[Fe]O[Si]"
+
 ## Symbolic environments
 
 `evaluate-chain`, `search-chain`, `chain-simulate`, `chain-report`, `environment-sweep`, and `niche-search` can apply simplified environmental modifiers:
