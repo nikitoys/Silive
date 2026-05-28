@@ -60,7 +60,7 @@ def _load_rdkit() -> Any:
         from rdkit import Chem
     except ImportError as exc:
         raise RDKitUnavailableError(
-            "RDKit is not installed. Install the optional dependency with: pip install -e .[rdkit]"
+            "RDKit is not installed. Install the optional dependency with: pip install -e .[chem]"
         ) from exc
     return Chem
 

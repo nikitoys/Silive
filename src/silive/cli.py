@@ -388,7 +388,10 @@ def run_evolve_command(args: argparse.Namespace) -> str:
         seed=args.seed,
         start_candidates=start_candidates,
     )
-    run = run_evolution(config)
+    try:
+        run = run_evolution(config)
+    except RDKitUnavailableError as exc:
+        raise SystemExit(str(exc)) from exc
     write_evolution_outputs(run, args.output_dir)
     return format_evolution_summary(run) + f"\n\nwrote outputs to {args.output_dir}"
 

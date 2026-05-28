@@ -28,10 +28,7 @@ Check these likely fragility points:
 
 1. RDKit parsing of unusual silicon/phosphate/metal strings.
 2. Whether invalid SMILES always returns invalid evaluation instead of crashing.
-3. Whether CLI wrapper chain works after editable install:
-   - `cli_with_evolution.py`;
-   - `cli_with_reactions.py`;
-   - `cli_with_rdkit.py`;
+3. Whether the single CLI router works after editable install:
    - `cli.py`.
 4. Whether tests skip cleanly without RDKit.
 5. Whether CI still passes with only `.[dev]` installed.
@@ -40,16 +37,18 @@ Check these likely fragility points:
 
 Refactor the CLI wrappers into one clean router.
 
-Current chain:
+Status: done. The stable entry point is `silive.cli:main`, and old wrapper modules have been retired.
+
+Old design:
 
 ```text
-cli_with_evolution -> cli_with_reactions -> cli_with_rdkit -> cli
+separate compatibility wrapper modules forwarding into the main CLI
 ```
 
-Desired:
+Current design:
 
 ```text
-cli.py or command_router.py
+cli.py
   handles all commands directly
 ```
 
