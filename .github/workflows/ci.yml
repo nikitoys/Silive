@@ -46,6 +46,13 @@ jobs:
             --random-seed 42 \
             --output outputs/chain_search.csv
 
+      - name: Run quick chain simulation smoke test
+        run: |
+          silive chain-simulate "Si-O-Si-O-Fe-O-Si" \
+            --generations 5 \
+            --runs 2 \
+            --seed 42
+
       - name: Run quick visual lab smoke test
         run: |
           silive lab \
