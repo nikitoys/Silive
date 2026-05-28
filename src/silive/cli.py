@@ -4,6 +4,7 @@ import argparse
 from itertools import combinations
 from pathlib import Path
 
+from .chemistry import evaluate_chain, format_scorecard
 from .model import ALL_GENES, SimulationConfig, compare_gene_sets, simulate
 from .plot import SUPPORTED_METRICS, plot_phase_map, write_multiple_plots
 from .study import run_repair_study, write_repair_study_outputs
@@ -156,6 +157,11 @@ def run_repair_study_command(args: argparse.Namespace) -> None:
         print(f"  {key}: {value}")
 
 
+def run_evaluate_chain_command(args: argparse.Namespace) -> None:
+    evaluation = evaluate_chain(args.chain)
+    print(format_scorecard(evaluation))
+
+
 def _add_sweep_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--mutation-start", type=float, default=0.0)
     parser.add_argument("--mutation-stop", type=float, default=0.30)
@@ -221,6 +227,13 @@ def build_parser() -> argparse.ArgumentParser:
     _add_sweep_arguments(repair_study_parser)
     repair_study_parser.add_argument("--output-dir", default="outputs/repair_study")
     repair_study_parser.set_defaults(func=run_repair_study_command)
+
+    evaluate_chain_parser = subparsers.add_parser(
+        "evaluate-chain",
+        help="evaluate a concrete symbolic element chain against proto-life functions",
+    )
+    evaluate_chain_parser.add_argument("chain", help="element chain such as Si-O-Si-O-Fe-O-Si")
+    evaluate_chain_parser.set_defaults(func=run_evaluate_chain_command)
 
     return parser
 
