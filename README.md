@@ -23,11 +23,11 @@ Genes are probability modifiers:
 
 | Gene | Meaning |
 | --- | --- |
-| `POL` | polymerase-like stitching; copy speed x5 |
+| `POL` | polymerase-like stitching; copy speed x5, but copying costs extra energy |
 | `SEP` | separation of copy; separation chance 0.7 |
-| `SHELL` | protective shell/matrix; survival chance x2 |
+| `SHELL` | protective shell/matrix; adds a configurable survival bonus |
 | `REPAIR` | lowers mutation rate |
-| `CAT` | catalytic center; stabilizes weak pairs |
+| `CAT` | catalytic center; slightly stabilizes weak pairs |
 
 ## Install
 
@@ -51,11 +51,52 @@ pip install -e .[dev]
 silive simulate --generations 100 --population-limit 100 --genes POL SEP SHELL REPAIR
 ```
 
+You can also tune mutation and shell strength:
+
+```bash
+silive simulate \
+  --genes POL SEP SHELL REPAIR \
+  --mutation-rate 0.12 \
+  --shell-bonus 0.20 \
+  --seed 42
+```
+
 ## Compare gene sets
 
 ```bash
 silive compare --generations 100 --runs 20
 ```
+
+## Build a phase map
+
+`silive sweep` scans a grid of mutation rates and shell survival bonuses. It writes a CSV table with survival, code preservation, final population, stability, fitness, and a rough zone label.
+
+```bash
+silive sweep \
+  --mutation-start 0.00 \
+  --mutation-stop 0.30 \
+  --mutation-steps 16 \
+  --shell-start 0.00 \
+  --shell-stop 0.40 \
+  --shell-steps 16 \
+  --genes POL SEP SHELL REPAIR \
+  --runs 30 \
+  --generations 100 \
+  --output phase_map.csv
+```
+
+CSV columns:
+
+| Column | Meaning |
+| --- | --- |
+| `mutation_rate` | base sequence mutation rate |
+| `shell_bonus` | extra survival chance from `SHELL` |
+| `survival_rate` | fraction of runs that did not go extinct |
+| `code_preservation_rate` | fraction of final organisms still matching the start sequence |
+| `avg_final_population` | average final population size |
+| `avg_final_stability` | average final pair stability |
+| `avg_best_fitness` | average best fitness at the end |
+| `zone` | rough classification: `dead`, `unstable`, `drifting`, `proto_life`, or `stable_life` |
 
 ## Run tests
 
