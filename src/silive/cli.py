@@ -22,8 +22,28 @@ from .environment_sweep import (
 from .model import ALL_GENES, SimulationConfig, compare_gene_sets, simulate
 from .niche_search import format_niche_ranking, run_niche_search, write_niche_search_outputs
 from .plot import SUPPORTED_METRICS, plot_phase_map, write_multiple_plots
+from .proto_genes import detect_proto_genes, format_rdkit_gene_scorecard, proto_gene_summary
+from .proto_genome import evaluate_proto_genome, format_proto_genome_evaluation, format_rdkit_genome_scorecard
+from .rdkit_chemistry import RDKitUnavailableError, evaluate_rdkit_molecule, format_rdkit_scorecard
+from .rdkit_cli import run_rdkit_evaluate_text
+from .rdkit_search import format_rdkit_search_table, search_rdkit_candidates, write_rdkit_search_csv
+from .reaction_simulator import (
+    format_reaction_results,
+    format_reaction_search_table,
+    reaction_search,
+    simulate_reactions,
+    write_reaction_search_csv,
+)
 from .study import run_repair_study, write_repair_study_outputs
+from .evolutionary_search import (
+    EvolutionConfig,
+    format_evolution_summary,
+    load_start_candidates,
+    run_evolution,
+    write_evolution_outputs,
+)
 from .sweep import SweepConfig, linspace, run_sweep, write_csv
+from .symbolic_graph import build_symbolic_graph, format_symbolic_graph_summary
 
 
 def _print_generation(record: dict) -> None:
@@ -270,6 +290,108 @@ def run_niche_search_command(args: argparse.Namespace) -> None:
     print(f"wrote niche_search_json to {paths.niche_search_json}")
 
 
+def _load_rdkit_evaluation(molecule: str):
+    try:
+        return evaluate_rdkit_molecule(molecule)
+    except RDKitUnavailableError as exc:
+        raise SystemExit(str(exc)) from exc
+
+
+def run_rdkit_evaluate_command(args: argparse.Namespace) -> None:
+    print(run_rdkit_evaluate_text(args.molecule))
+
+
+def run_rdkit_gene_evaluate_text(molecule: str) -> str:
+    return format_rdkit_gene_scorecard(_load_rdkit_evaluation(molecule))
+
+
+def run_rdkit_gene_evaluate_command(args: argparse.Namespace) -> None:
+    print(run_rdkit_gene_evaluate_text(args.molecule))
+
+
+def run_rdkit_genome_evaluate_text(molecule: str) -> str:
+    return format_rdkit_genome_scorecard(_load_rdkit_evaluation(molecule))
+
+
+def run_rdkit_genome_evaluate_command(args: argparse.Namespace) -> None:
+    print(run_rdkit_genome_evaluate_text(args.molecule))
+
+
+def run_rdkit_graph_evaluate_text(molecule: str) -> str:
+    evaluation = _load_rdkit_evaluation(molecule)
+    graph = build_symbolic_graph(evaluation)
+    gene_hits = detect_proto_genes(evaluation)
+    genome = evaluate_proto_genome(gene_hits, evaluation)
+    return (
+        format_rdkit_scorecard(evaluation)
+        + "\n\n"
+        + format_symbolic_graph_summary(graph)
+        + "\n\n"
+        + proto_gene_summary(gene_hits)
+        + "\n\n"
+        + format_proto_genome_evaluation(genome)
+    )
+
+
+def run_rdkit_graph_evaluate_command(args: argparse.Namespace) -> None:
+    print(run_rdkit_graph_evaluate_text(args.molecule))
+
+
+def run_rdkit_search_command(args: argparse.Namespace) -> str:
+    try:
+        candidates = search_rdkit_candidates(args.input, top=args.top)
+    except RDKitUnavailableError as exc:
+        raise SystemExit(str(exc)) from exc
+    write_rdkit_search_csv(candidates, args.output)
+    return format_rdkit_search_table(candidates) + f"\n\nwrote {len(candidates)} candidates to {args.output}"
+
+
+def run_rdkit_search_cli_command(args: argparse.Namespace) -> None:
+    print(run_rdkit_search_command(args))
+
+
+def run_reaction_simulate_text(molecule: str, top: int = 10) -> str:
+    evaluation = _load_rdkit_evaluation(molecule)
+    return format_reaction_results(simulate_reactions(evaluation), top=top)
+
+
+def run_reaction_simulate_command(args: argparse.Namespace) -> None:
+    print(run_reaction_simulate_text(args.molecule, top=args.top))
+
+
+def run_reaction_search_text(input_path: str, output: str, top: int = 20) -> str:
+    try:
+        rows = reaction_search(input_path, top=top)
+    except RDKitUnavailableError as exc:
+        raise SystemExit(str(exc)) from exc
+    write_reaction_search_csv(rows, output)
+    return format_reaction_search_table(rows) + f"\n\nwrote {len(rows)} reaction opportunities to {output}"
+
+
+def run_reaction_search_command(args: argparse.Namespace) -> None:
+    print(run_reaction_search_text(args.input, args.output, top=args.top))
+
+
+def run_evolve_command(args: argparse.Namespace) -> str:
+    start_candidates = load_start_candidates(args.input)
+    config = EvolutionConfig(
+        generations=args.generations,
+        population_size=args.population_size,
+        elite_size=args.elite_size,
+        mutation_rate=args.mutation_rate,
+        reaction_rate=args.reaction_rate,
+        seed=args.seed,
+        start_candidates=start_candidates,
+    )
+    run = run_evolution(config)
+    write_evolution_outputs(run, args.output_dir)
+    return format_evolution_summary(run) + f"\n\nwrote outputs to {args.output_dir}"
+
+
+def run_evolve_cli_command(args: argparse.Namespace) -> None:
+    print(run_evolve_command(args))
+
+
 def _add_sweep_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--mutation-start", type=float, default=0.0)
     parser.add_argument("--mutation-stop", type=float, default=0.30)
@@ -307,6 +429,10 @@ def _add_chain_simulation_arguments(parser: argparse.ArgumentParser, *, include_
     parser.add_argument("--mutation-rate", type=float, default=0.08)
     parser.add_argument("--gene-mutation-rate", type=float, default=0.03)
     parser.add_argument("--shell-bonus", type=float, default=0.15)
+
+
+def _add_rdkit_molecule_argument(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("molecule", help="SMILES/SMARTS such as [Si]-O-[Si]-O-[Fe]-O-[Si]")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -420,12 +546,65 @@ def build_parser() -> argparse.ArgumentParser:
     _add_chain_simulation_arguments(niche_search_parser, include_seed=False)
     niche_search_parser.set_defaults(func=run_niche_search_command)
 
+    rdkit_evaluate_parser = subparsers.add_parser("rdkit-evaluate", help="evaluate an RDKit SMILES/SMARTS molecule")
+    _add_rdkit_molecule_argument(rdkit_evaluate_parser)
+    rdkit_evaluate_parser.set_defaults(func=run_rdkit_evaluate_command)
+
+    rdkit_gene_parser = subparsers.add_parser("rdkit-gene-evaluate", help="detect proto-genes in an RDKit molecule")
+    _add_rdkit_molecule_argument(rdkit_gene_parser)
+    rdkit_gene_parser.set_defaults(func=run_rdkit_gene_evaluate_command)
+
+    rdkit_genome_parser = subparsers.add_parser("rdkit-genome-evaluate", help="evaluate proto-genome coverage")
+    _add_rdkit_molecule_argument(rdkit_genome_parser)
+    rdkit_genome_parser.set_defaults(func=run_rdkit_genome_evaluate_command)
+
+    rdkit_graph_parser = subparsers.add_parser(
+        "rdkit-graph-evaluate",
+        help="evaluate RDKit molecule, symbolic graph, proto-genes, and proto-genome",
+    )
+    _add_rdkit_molecule_argument(rdkit_graph_parser)
+    rdkit_graph_parser.set_defaults(func=run_rdkit_graph_evaluate_command)
+
+    rdkit_search_parser = subparsers.add_parser("rdkit-search", help="rank RDKit SMILES/SMARTS candidates from a file")
+    rdkit_search_parser.add_argument("input", help=".smi/.txt file with one SMILES/SMARTS candidate per line")
+    rdkit_search_parser.add_argument("--output", default="outputs/rdkit_search.csv")
+    rdkit_search_parser.add_argument("--top", type=int, default=20)
+    rdkit_search_parser.set_defaults(func=run_rdkit_search_cli_command)
+
+    reaction_simulate_parser = subparsers.add_parser(
+        "rdkit-reaction-simulate",
+        help="simulate abstract reaction opportunities for one RDKit candidate",
+    )
+    reaction_simulate_parser.add_argument("molecule", help="SMILES/SMARTS candidate")
+    reaction_simulate_parser.add_argument("--top", type=int, default=10)
+    reaction_simulate_parser.set_defaults(func=run_reaction_simulate_command)
+
+    reaction_search_parser = subparsers.add_parser(
+        "rdkit-reaction-search",
+        help="rank abstract reaction opportunities for RDKit candidates from a file",
+    )
+    reaction_search_parser.add_argument("input", help=".smi/.txt file with one SMILES/SMARTS candidate per line")
+    reaction_search_parser.add_argument("--output", default="outputs/reaction_search.csv")
+    reaction_search_parser.add_argument("--top", type=int, default=20)
+    reaction_search_parser.set_defaults(func=run_reaction_search_command)
+
+    evolve_parser = subparsers.add_parser("rdkit-evolve", help="run abstract evolutionary motif search")
+    evolve_parser.add_argument("input", nargs="?", default=None, help="optional .smi/.txt file with start candidates")
+    evolve_parser.add_argument("--generations", type=int, default=20)
+    evolve_parser.add_argument("--population-size", type=int, default=30)
+    evolve_parser.add_argument("--elite-size", type=int, default=5)
+    evolve_parser.add_argument("--mutation-rate", type=float, default=0.75)
+    evolve_parser.add_argument("--reaction-rate", type=float, default=0.50)
+    evolve_parser.add_argument("--output-dir", default="outputs/evolution")
+    evolve_parser.add_argument("--seed", type=int, default=None)
+    evolve_parser.set_defaults(func=run_evolve_cli_command)
+
     return parser
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
     parser = build_parser()
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     args.func(args)
 
 
