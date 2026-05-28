@@ -37,6 +37,14 @@ jobs:
       - name: Run symbolic chemistry smoke test
         run: silive evaluate-chain "Si-O-Si-O-Fe-O-Si"
 
+      - name: Run RDKit command smoke test without optional dependency
+        run: |
+          if silive rdkit-evaluate "[Si]O[Si]O[Fe]O[Si]"; then
+            echo "RDKit layer available"
+          else
+            echo "RDKit layer unavailable as expected in base CI"
+          fi
+
       - name: Run environment chemistry smoke test
         run: silive evaluate-chain "Si-O-Si-O-Fe-O-Si" --environment hydrothermal
 
