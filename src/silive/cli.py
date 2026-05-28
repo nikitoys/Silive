@@ -24,6 +24,11 @@ from .niche_search import format_niche_ranking, run_niche_search, write_niche_se
 from .plot import SUPPORTED_METRICS, plot_phase_map, write_multiple_plots
 from .proto_genes import detect_proto_genes, format_rdkit_gene_scorecard, proto_gene_summary
 from .proto_genome import evaluate_proto_genome, format_proto_genome_evaluation, format_rdkit_genome_scorecard
+from .proto_gene_lineage import (
+    ProtoGeneLineageConfig,
+    format_proto_gene_summary,
+    run_and_write_proto_gene_lineage_search,
+)
 from .rdkit_chemistry import RDKitUnavailableError, evaluate_rdkit_molecule, format_rdkit_scorecard
 from .rdkit_cli import run_rdkit_evaluate_text
 from .rdkit_search import format_rdkit_search_table, search_rdkit_candidates, write_rdkit_search_csv
@@ -392,6 +397,32 @@ def run_evolve_cli_command(args: argparse.Namespace) -> None:
     print(run_evolve_command(args))
 
 
+def run_proto_gene_search_command(args: argparse.Namespace) -> None:
+    config = ProtoGeneLineageConfig(
+        mode=args.mode,
+        generations=args.generations,
+        population_size=args.population_size,
+        rounds=args.rounds,
+        runs=args.runs,
+        seed=args.seed,
+        environment=args.environment,
+        input_path=args.input,
+        seed_chain=args.seed_chain,
+        retention_threshold=args.retention_threshold,
+    )
+    try:
+        run, paths = run_and_write_proto_gene_lineage_search(config, args.output_dir)
+    except RDKitUnavailableError as exc:
+        raise SystemExit(str(exc)) from exc
+
+    print(format_proto_gene_summary(run))
+    print(f"\nwrote proto_gene_candidates_csv to {paths.proto_gene_candidates_csv}")
+    print(f"wrote lineage_history_csv to {paths.lineage_history_csv}")
+    print(f"wrote proto_gene_summary_json to {paths.proto_gene_summary_json}")
+    print(f"wrote best_proto_gene_json to {paths.best_proto_gene_json}")
+    print(f"wrote proto_gene_report_md to {paths.proto_gene_report_md}")
+
+
 def _add_sweep_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--mutation-start", type=float, default=0.0)
     parser.add_argument("--mutation-stop", type=float, default=0.30)
@@ -598,6 +629,23 @@ def build_parser() -> argparse.ArgumentParser:
     evolve_parser.add_argument("--output-dir", default="outputs/evolution")
     evolve_parser.add_argument("--seed", type=int, default=None)
     evolve_parser.set_defaults(func=run_evolve_cli_command)
+
+    proto_gene_parser = subparsers.add_parser(
+        "proto-gene-search",
+        help="search abstract heritable silicon/mineral proto-gene motifs",
+    )
+    proto_gene_parser.add_argument("input", nargs="?", default=None, help="optional RDKit .smi/.txt input file")
+    proto_gene_parser.add_argument("--mode", choices=("chain", "rdkit"), default="rdkit")
+    proto_gene_parser.add_argument("--seed-chain", default=None, help="symbolic chain seed for --mode chain")
+    proto_gene_parser.add_argument("--rounds", type=int, default=200)
+    proto_gene_parser.add_argument("--generations", type=int, default=10)
+    proto_gene_parser.add_argument("--population-size", type=int, default=20)
+    proto_gene_parser.add_argument("--runs", type=int, default=10)
+    proto_gene_parser.add_argument("--output-dir", default="outputs/proto_gene_search")
+    proto_gene_parser.add_argument("--seed", type=int, default=None)
+    proto_gene_parser.add_argument("--retention-threshold", type=float, default=0.60)
+    _add_environment_argument(proto_gene_parser)
+    proto_gene_parser.set_defaults(func=run_proto_gene_search_command)
 
     return parser
 

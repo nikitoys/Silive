@@ -211,6 +211,47 @@ outputs/niche_search/niche_search.json
 
 This is useful when the question is not only “which chain is good?” but “which chain becomes good in which environment?”.
 
+## Search heritable proto-gene motifs
+
+`silive proto-gene-search` ranks computational proto-gene candidates by template storage, copyability, separation, survival, function retention, lineage depth, and a combined `proto_gene_score`.
+
+Symbolic chain mode works without RDKit:
+
+```bash
+silive proto-gene-search \
+  --mode chain \
+  --seed-chain "Si-O-Si-O-Fe-O-Si" \
+  --rounds 200 \
+  --generations 10 \
+  --output-dir outputs/proto_gene_search \
+  --seed 42
+```
+
+RDKit mode reuses the symbolic graph, proto-gene, proto-genome, reaction opportunity, and mutation layers:
+
+```bash
+silive proto-gene-search examples/rdkit_candidates.smi \
+  --mode rdkit \
+  --generations 10 \
+  --population-size 20 \
+  --runs 10 \
+  --environment hydrothermal \
+  --output-dir outputs/proto_gene_search \
+  --seed 42
+```
+
+Outputs:
+
+```text
+outputs/proto_gene_search/proto_gene_candidates.csv
+outputs/proto_gene_search/lineage_history.csv
+outputs/proto_gene_search/proto_gene_summary.json
+outputs/proto_gene_search/best_proto_gene.json
+outputs/proto_gene_search/proto_gene_report.md
+```
+
+This layer is a computational symbolic simulator. It does not provide synthesis protocols, lab parameters, quantities, temperatures, pressures, timings, or operational experimental instructions.
+
 ## Install
 
 ```bash

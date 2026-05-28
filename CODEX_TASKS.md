@@ -1,6 +1,6 @@
-# Codex task list for Silive
+# Project task list for Silive
 
-Use this file together with `CODEX_MANIFEST.md`.
+Use this file together with `PROJECT_GOAL.md` to understand the current project direction, implemented pipeline, and next work items.
 
 ## First checks
 
@@ -22,18 +22,12 @@ silive rdkit-reaction-search examples/rdkit_candidates.smi --output outputs/reac
 silive rdkit-evolve examples/rdkit_candidates.smi --generations 5 --population-size 10 --elite-size 3 --output-dir outputs/evolution --seed 42
 ```
 
-## Priority 0: keep safety boundary
-
-Do not add wet-lab protocols, synthesis procedures, quantities, temperatures, pressures, or operational chemical instructions.
-
-This project is for abstract computational screening and hypothesis generation only.
-
 ## Priority 1: verify current code health
 
 Check these likely fragility points:
 
 1. RDKit parsing of unusual silicon/phosphate/metal strings.
-2. Whether invalid SMILES always returns safe invalid evaluation instead of crashing.
+2. Whether invalid SMILES always returns invalid evaluation instead of crashing.
 3. Whether CLI wrapper chain works after editable install:
    - `cli_with_evolution.py`;
    - `cli_with_reactions.py`;
@@ -70,7 +64,7 @@ Acceptance criteria:
 
 Possible improvements:
 
-1. Replace brute-force longest path with safer graph algorithm for larger graphs.
+1. Replace brute-force longest path with a graph algorithm that scales better for larger graphs.
 2. Add explicit bridge classification:
    - siloxane bridge;
    - metal oxide bridge;
@@ -92,7 +86,7 @@ Better next version:
    - `symbolic_viability_score`.
 4. Keep invalid symbolic candidates if they are useful for abstract search, but mark them clearly.
 
-## Priority 5: add safe hypothesis layer
+## Priority 5: add hypothesis/report layer
 
 Recommended new module:
 
@@ -120,20 +114,12 @@ Output should include:
 - recurring bottlenecks;
 - missing functions;
 - promising topology classes;
-- high-level material classes to compare;
-- high-level environmental variables to compare;
-- explicit non-operational safety disclaimer.
-
-It must not include:
-
-- synthesis procedures;
-- amounts/concentrations;
-- temperatures/pressures/times;
-- purification steps;
-- operational lab instructions.
+- material classes to compare;
+- environmental variables to compare;
+- links back to the candidate rows/files that produced each observation.
 
 ## Suggested prompt for Codex
 
 ```text
-Read CODEX_MANIFEST.md and CODEX_TASKS.md. Inspect the current Silive repository. First run tests without RDKit and identify any failures. Then, if possible, run with RDKit. Do not add wet-lab protocols. Your first task is to refactor the CLI wrapper chain into one clean command router while preserving all commands and tests.
+Read PROJECT_GOAL.md and CODEX_TASKS.md. Inspect the current Silive repository. First run tests without RDKit and identify any failures. Then, if possible, run with RDKit. Your first task is to refactor the CLI wrapper chain into one clean command router while preserving all commands and tests.
 ```

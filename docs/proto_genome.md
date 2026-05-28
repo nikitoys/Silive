@@ -54,4 +54,4 @@ The evaluator emits simple design hints when functions are missing:
 
 ## Scope
 
-This is a heuristic design-space filter, not proof of chemical viability. It helps rank and debug candidate motifs before deeper graph, reaction, or wet-lab modeling.
+This is a heuristic design-space filter. It helps rank and debug candidate motifs before deeper graph, reaction, or environment modeling.

@@ -1,6 +1,6 @@
 # Evolutionary RDKit/symbolic search
 
-The evolutionary search is an abstract computational search over RDKit/symbolic motif candidates. It is not a wet-lab protocol and does not generate synthesis instructions.
+The evolutionary search is an abstract computational search over RDKit/symbolic motif candidates.
 
 Its goal is to explore motif-level variants, apply abstract reaction opportunities, and select candidates by `candidate_score` and `genome_score`.
 
@@ -57,4 +57,4 @@ The command writes:
 
 ## Scope
 
-This layer searches symbolic motif space. Mutations and reaction applications are computational abstractions used to guide hypothesis generation. They are not claims of chemical feasibility.
+This layer searches symbolic motif space. Mutations and reaction applications are computational abstractions used to guide hypothesis generation and compare motif families.

@@ -49,6 +49,17 @@ from .niche_search import (
     write_niche_search_outputs,
 )
 from .plot import PhaseGrid, make_phase_grid, plot_phase_map, read_phase_map
+from .proto_gene_lineage import (
+    LineageNode,
+    ProtoGeneCandidate,
+    ProtoGeneLineageConfig,
+    ProtoGeneLineageRun,
+    ProtoGeneMetrics,
+    format_proto_gene_report,
+    format_proto_gene_summary,
+    run_proto_gene_lineage_search,
+    write_proto_gene_outputs,
+)
 from .study import RepairStudyResult, build_delta_rows, run_repair_study, summarize_repair_effect
 from .sweep import SweepConfig, linspace, run_sweep, write_csv
 
@@ -67,6 +78,15 @@ __all__ = [
     "read_phase_map",
     "make_phase_grid",
     "plot_phase_map",
+    "ProtoGeneMetrics",
+    "ProtoGeneCandidate",
+    "LineageNode",
+    "ProtoGeneLineageConfig",
+    "ProtoGeneLineageRun",
+    "run_proto_gene_lineage_search",
+    "write_proto_gene_outputs",
+    "format_proto_gene_report",
+    "format_proto_gene_summary",
     "RepairStudyResult",
     "build_delta_rows",
     "run_repair_study",

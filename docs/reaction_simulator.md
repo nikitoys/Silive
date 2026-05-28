@@ -1,6 +1,6 @@
 # Experimental reaction simulator
 
-The reaction simulator is an abstract transition model over RDKit/symbolic graph candidates. It is not a wet-lab synthesis procedure and does not claim that a reaction is chemically feasible.
+The reaction simulator is an abstract transition model over RDKit/symbolic graph candidates.
 
 Its purpose is to ask: if a candidate gained or lost certain motifs, which proto-life functions would likely improve or degrade?
 
@@ -57,4 +57,4 @@ CSV columns:
 
 ## Scope
 
-The simulator works on motifs, graph tags, proto-gene coverage, and proto-genome score. It intentionally avoids experimental conditions, quantities, temperatures, procedures, or synthesis instructions.
+The simulator works on motifs, graph tags, proto-gene coverage, and proto-genome score.
