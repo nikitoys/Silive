@@ -5,6 +5,7 @@ import sys
 
 from . import cli as base_cli
 from .proto_genes import format_rdkit_gene_scorecard
+from .proto_genome import format_rdkit_genome_scorecard
 from .rdkit_chemistry import RDKitUnavailableError, evaluate_rdkit_molecule
 from .rdkit_cli import run_rdkit_evaluate_text
 
@@ -23,6 +24,14 @@ def run_rdkit_gene_evaluate_text(molecule: str) -> str:
     return format_rdkit_gene_scorecard(evaluation)
 
 
+def run_rdkit_genome_evaluate_text(molecule: str) -> str:
+    try:
+        evaluation = evaluate_rdkit_molecule(molecule)
+    except RDKitUnavailableError as exc:
+        raise SystemExit(str(exc)) from exc
+    return format_rdkit_genome_scorecard(evaluation)
+
+
 def main(argv: list[str] | None = None) -> None:
     args = list(sys.argv[1:] if argv is None else argv)
     if args and args[0] == "rdkit-evaluate":
@@ -33,6 +42,11 @@ def main(argv: list[str] | None = None) -> None:
     if args and args[0] == "rdkit-gene-evaluate":
         parsed = _parse_molecule_command("silive rdkit-gene-evaluate", args[1:])
         print(run_rdkit_gene_evaluate_text(parsed.molecule))
+        return
+
+    if args and args[0] == "rdkit-genome-evaluate":
+        parsed = _parse_molecule_command("silive rdkit-genome-evaluate", args[1:])
+        print(run_rdkit_genome_evaluate_text(parsed.molecule))
         return
 
     old_argv = sys.argv
