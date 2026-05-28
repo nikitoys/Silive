@@ -6,6 +6,7 @@ from pathlib import Path
 
 from .model import ALL_GENES, SimulationConfig, compare_gene_sets, simulate
 from .plot import SUPPORTED_METRICS, plot_phase_map, write_multiple_plots
+from .study import run_repair_study, write_repair_study_outputs
 from .sweep import SweepConfig, linspace, run_sweep, write_csv
 
 
@@ -142,6 +143,19 @@ def run_lab_command(args: argparse.Namespace) -> None:
     _print_zone_summary(rows)
 
 
+def run_repair_study_command(args: argparse.Namespace) -> None:
+    config = _make_sweep_config(args)
+    result = run_repair_study(config)
+    paths = write_repair_study_outputs(result, args.output_dir)
+
+    for label, path in paths.items():
+        print(f"wrote {label} to {path}")
+
+    print("summary:")
+    for key, value in result.summary.items():
+        print(f"  {key}: {value}")
+
+
 def _add_sweep_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--mutation-start", type=float, default=0.0)
     parser.add_argument("--mutation-stop", type=float, default=0.30)
@@ -199,6 +213,14 @@ def build_parser() -> argparse.ArgumentParser:
     _add_sweep_arguments(lab_parser)
     lab_parser.add_argument("--output-dir", default="outputs")
     lab_parser.set_defaults(func=run_lab_command)
+
+    repair_study_parser = subparsers.add_parser(
+        "repair-study",
+        help="compare phase maps with and without REPAIR",
+    )
+    _add_sweep_arguments(repair_study_parser)
+    repair_study_parser.add_argument("--output-dir", default="outputs/repair_study")
+    repair_study_parser.set_defaults(func=run_repair_study_command)
 
     return parser
 
