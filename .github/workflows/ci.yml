@@ -61,6 +61,14 @@ jobs:
             echo "Proto-genome layer unavailable as expected in base CI"
           fi
 
+      - name: Run RDKit search smoke test without optional dependency
+        run: |
+          if silive rdkit-search examples/rdkit_candidates.smi --output outputs/rdkit_search.csv --top 5; then
+            echo "RDKit search available"
+          else
+            echo "RDKit search unavailable as expected in base CI"
+          fi
+
       - name: Run environment chemistry smoke test
         run: silive evaluate-chain "Si-O-Si-O-Fe-O-Si" --environment hydrothermal
 
