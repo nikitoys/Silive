@@ -2,6 +2,8 @@
 
 This file is a handoff note for Codex or any other coding agent taking over the Silive project.
 
+Start with `PROJECT_GOAL.md`. It is the canonical short explanation of why this project exists, what the simulator is trying to answer, and what safety boundary must be preserved.
+
 ## Project purpose
 
 Silive is an experimental computational research toy-model for hypothetical silicon-like proto-life.
@@ -190,6 +192,7 @@ Common output directories:
 
 ## Docs already present
 
+- `PROJECT_GOAL.md`
 - `docs/proto_genes.md`
 - `docs/proto_genome.md`
 - `docs/rdkit_search.md`
@@ -221,7 +224,7 @@ The GitHub Actions workflow installs `.[dev]`, not `.[chem]`, so RDKit may be ab
 2. `symbolic_chain` is legacy and loses topology; prefer `SymbolicGraph`.
 3. Reaction simulator does not generate valid product SMILES; it generates symbolic product descriptions.
 4. Evolutionary search mutates strings and symbolic descriptions; it is not a realistic chemistry generator.
-5. CLI wrapper chain should eventually be refactored into one command router.
+5. CLI wrapper chain should eventually be refactored into one clean command router.
 6. Scores are heuristic and should be interpreted as ranking/debugging aids, not scientific proof.
 
 ## Recommended next step
