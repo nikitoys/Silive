@@ -2,14 +2,18 @@
 
 from .chain_simulation import ChainSimulationResult, format_chain_simulation, simulate_chain
 from .chemistry import (
+    ENVIRONMENT_MODIFIERS,
+    SUPPORTED_ENVIRONMENTS,
     ChainEvaluation,
     ChainSearchResult,
+    apply_environment_modifiers,
     evaluate_chain,
     format_scorecard,
     format_search_results,
     mutate_chain,
     parse_chain,
     search_chains,
+    validate_environment,
     write_chain_search_csv,
 )
 from .model import ALL_GENES, PAIR_STABILITY, ProtoLife, SimulationConfig, compare_gene_sets, simulate
@@ -48,4 +52,8 @@ __all__ = [
     "ChainSimulationResult",
     "simulate_chain",
     "format_chain_simulation",
+    "ENVIRONMENT_MODIFIERS",
+    "SUPPORTED_ENVIRONMENTS",
+    "apply_environment_modifiers",
+    "validate_environment",
 ]
