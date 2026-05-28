@@ -37,6 +37,15 @@ jobs:
       - name: Run symbolic chemistry smoke test
         run: silive evaluate-chain "Si-O-Si-O-Fe-O-Si"
 
+      - name: Run quick chain search smoke test
+        run: |
+          silive search-chain \
+            --seed "Si-O-Si-O-Fe-O-Si" \
+            --rounds 20 \
+            --top 5 \
+            --random-seed 42 \
+            --output outputs/chain_search.csv
+
       - name: Run quick visual lab smoke test
         run: |
           silive lab \
