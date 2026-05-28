@@ -31,6 +31,7 @@ def _code_preservation(population: list, target_sequence: str) -> float:
 def simulate_chain(
     chain: str | Iterable[str],
     *,
+    environment: str | None = None,
     generations: int = 100,
     runs: int = 20,
     seed: int | None = None,
@@ -46,7 +47,7 @@ def simulate_chain(
     if runs <= 0:
         raise ValueError("runs must be positive")
 
-    evaluation = evaluate_chain(chain)
+    evaluation = evaluate_chain(chain, environment=environment)
     genes = tuple(sorted(evaluation.predicted_functions))
     rng = random.Random(seed)
 
@@ -103,6 +104,7 @@ def format_chain_simulation(result: ChainSimulationResult) -> str:
     return "\n".join(
         [
             f"chain: {'-'.join(result.evaluation.chain)}",
+            f"environment: {result.evaluation.environment or 'none'}",
             f"viability: {result.evaluation.viability}",
             f"viability score: {result.evaluation.viability_score:.3f}",
             f"predicted functions: {genes}",
