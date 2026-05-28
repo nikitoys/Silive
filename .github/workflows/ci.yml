@@ -75,6 +75,17 @@ jobs:
             --seed 42 \
             --output-dir outputs/env_sweep
 
+      - name: Run quick niche search smoke test
+        run: |
+          silive niche-search \
+            --seed "Si-O-Si-O-Fe-O-Si" \
+            --rounds 2 \
+            --top 3 \
+            --generations 3 \
+            --runs 1 \
+            --seed 42 \
+            --output-dir outputs/niche_search
+
       - name: Run quick visual lab smoke test
         run: |
           silive lab \
