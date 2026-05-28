@@ -4,7 +4,13 @@ import argparse
 from itertools import combinations
 from pathlib import Path
 
-from .chemistry import evaluate_chain, format_scorecard
+from .chemistry import (
+    evaluate_chain,
+    format_scorecard,
+    format_search_results,
+    search_chains,
+    write_chain_search_csv,
+)
 from .model import ALL_GENES, SimulationConfig, compare_gene_sets, simulate
 from .plot import SUPPORTED_METRICS, plot_phase_map, write_multiple_plots
 from .study import run_repair_study, write_repair_study_outputs
@@ -162,6 +168,19 @@ def run_evaluate_chain_command(args: argparse.Namespace) -> None:
     print(format_scorecard(evaluation))
 
 
+def run_search_chain_command(args: argparse.Namespace) -> None:
+    results = search_chains(
+        args.seed_chain,
+        rounds=args.rounds,
+        top_n=args.top,
+        seed=args.random_seed,
+        max_length=args.max_length,
+    )
+    write_chain_search_csv(results, args.output)
+    print(format_search_results(results))
+    print(f"\nwrote {len(results)} candidates to {args.output}")
+
+
 def _add_sweep_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--mutation-start", type=float, default=0.0)
     parser.add_argument("--mutation-stop", type=float, default=0.30)
@@ -234,6 +253,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
     evaluate_chain_parser.add_argument("chain", help="element chain such as Si-O-Si-O-Fe-O-Si")
     evaluate_chain_parser.set_defaults(func=run_evaluate_chain_command)
+
+    search_chain_parser = subparsers.add_parser(
+        "search-chain",
+        help="mutate a symbolic element chain and search for better proto-life candidates",
+    )
+    search_chain_parser.add_argument("--seed", dest="seed_chain", required=True, help="seed chain such as Si-O-Si-O-Fe-O-Si")
+    search_chain_parser.add_argument("--rounds", type=int, default=500)
+    search_chain_parser.add_argument("--top", type=int, default=10)
+    search_chain_parser.add_argument("--random-seed", type=int, default=None)
+    search_chain_parser.add_argument("--max-length", type=int, default=16)
+    search_chain_parser.add_argument("--output", default="chain_search.csv")
+    search_chain_parser.set_defaults(func=run_search_chain_command)
 
     return parser
 
