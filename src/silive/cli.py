@@ -253,7 +253,7 @@ def run_niche_search_command(args: argparse.Namespace) -> None:
         args.seed_chain,
         rounds=args.rounds,
         top_n=args.top,
-        seed=args.seed,
+        seed=args.random_seed,
         max_length=args.max_length,
         generations=args.generations,
         runs=args.runs,
@@ -296,10 +296,11 @@ def _add_environment_argument(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def _add_chain_simulation_arguments(parser: argparse.ArgumentParser) -> None:
+def _add_chain_simulation_arguments(parser: argparse.ArgumentParser, *, include_seed: bool = True) -> None:
     parser.add_argument("--generations", type=int, default=100)
     parser.add_argument("--runs", type=int, default=20)
-    parser.add_argument("--seed", type=int, default=None)
+    if include_seed:
+        parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--sequence", default="ABABAB")
     parser.add_argument("--population-limit", type=int, default=100)
     parser.add_argument("--start-population", type=int, default=10)
@@ -414,8 +415,9 @@ def build_parser() -> argparse.ArgumentParser:
     niche_search_parser.add_argument("--output-dir", default="outputs/niche_search")
     niche_search_parser.add_argument("--rounds", type=int, default=100)
     niche_search_parser.add_argument("--top", type=int, default=10)
+    niche_search_parser.add_argument("--random-seed", type=int, default=None)
     niche_search_parser.add_argument("--max-length", type=int, default=16)
-    _add_chain_simulation_arguments(niche_search_parser)
+    _add_chain_simulation_arguments(niche_search_parser, include_seed=False)
     niche_search_parser.set_defaults(func=run_niche_search_command)
 
     return parser
