@@ -25,6 +25,14 @@ PAIR_STABILITY: dict[tuple[str, str], float] = {
 ALL_GENES = ("POL", "SEP", "SHELL", "REPAIR", "CAT")
 TARGET_SEQUENCE = "ABABAB"
 
+CAT_WEAK_PAIR_BONUS = 0.05
+CAT_ENERGY_BONUS = 0.20
+SHELL_SURVIVAL_BONUS = 0.15
+SEP_SEPARATION_CHANCE = 0.70
+NO_SEP_SEPARATION_CHANCE = 0.02
+BASE_COPY_ENERGY_COST = 3.0
+POL_EXTRA_COPY_ENERGY_COST = 1.0
+
 
 @dataclass(slots=True)
 class SimulationConfig:
@@ -50,7 +58,7 @@ class ProtoLife:
     def pair_stability(self, left: str, right: str) -> float:
         base = PAIR_STABILITY.get((left, right), 0.10)
         if "CAT" in self.genes and base < 0.50:
-            base += 0.20
+            base += CAT_WEAK_PAIR_BONUS
         return min(base, 1.0)
 
     def stability(self) -> float:
@@ -65,14 +73,14 @@ class ProtoLife:
     def survival_chance(self) -> float:
         chance = self.stability()
         if "SHELL" in self.genes:
-            chance *= 2.0
+            chance += SHELL_SURVIVAL_BONUS
         return min(chance, 0.98)
 
     def copy_speed(self) -> float:
         return 5.0 if "POL" in self.genes else 1.0
 
     def separation_chance(self) -> float:
-        return 0.70 if "SEP" in self.genes else 0.15
+        return SEP_SEPARATION_CHANCE if "SEP" in self.genes else NO_SEP_SEPARATION_CHANCE
 
     def mutation_rate(self) -> float:
         rate = self.base_mutation_rate
@@ -82,6 +90,12 @@ class ProtoLife:
 
     def copy_probability(self) -> float:
         return min(0.10 * self.copy_speed(), 0.90)
+
+    def copy_energy_cost(self) -> float:
+        cost = BASE_COPY_ENERGY_COST
+        if "POL" in self.genes:
+            cost += POL_EXTRA_COPY_ENERGY_COST
+        return cost
 
     def mutate_symbol(self, symbol: str, rng: random.Random) -> str:
         if rng.random() < self.mutation_rate():
@@ -99,6 +113,9 @@ class ProtoLife:
         return new_genes
 
     def copy(self, rng: random.Random) -> ProtoLife | None:
+        energy_cost = self.copy_energy_cost()
+        if self.energy < energy_cost:
+            return None
         if rng.random() > self.copy_probability():
             return None
         if rng.random() > self.separation_chance():
@@ -112,7 +129,7 @@ class ProtoLife:
             base_mutation_rate=self.base_mutation_rate,
             gene_mutation_rate=self.gene_mutation_rate,
         )
-        self.energy -= 3.0
+        self.energy -= energy_cost
         return child
 
     def step(self, rng: random.Random) -> None:
@@ -127,7 +144,7 @@ class ProtoLife:
         self.energy += self.stability() * 2.0
 
         if "CAT" in self.genes:
-            self.energy += 0.5
+            self.energy += CAT_ENERGY_BONUS
 
         if self.energy <= 0:
             self.alive = False
