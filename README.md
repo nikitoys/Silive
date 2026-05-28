@@ -80,6 +80,27 @@ silive search-chain \
 
 The CSV includes each candidate chain, viability score, predicted functions, missing functions, symbolic properties, function scores, and mutation count.
 
+## Simulate a symbolic chain
+
+`silive chain-simulate` bridges Level 2 and Level 1. It evaluates a concrete symbolic chain, converts its predicted functions into Level 1 genes, runs repeated simulations, and reports aggregate survival/code preservation metrics.
+
+```bash
+silive chain-simulate "Si-O-Si-O-Fe-O-Si" \
+  --generations 100 \
+  --runs 30 \
+  --seed 42
+```
+
+Output metrics:
+
+| Metric | Meaning |
+| --- | --- |
+| `survival_rate` | fraction of runs that did not go extinct |
+| `code_preservation_rate` | average fraction of final organisms that still match the start sequence |
+| `avg_final_population` | average population at the final generation |
+| `avg_final_stability` | average final Level 1 sequence stability |
+| `avg_best_fitness` | average best final fitness |
+
 ## Install
 
 ```bash
@@ -224,7 +245,7 @@ pytest
 
 ## Continuous integration
 
-GitHub Actions runs tests on Python 3.10, 3.11, and 3.12. It also runs small `silive evaluate-chain`, `silive search-chain`, `silive lab`, and `silive repair-study` smoke tests and uploads the generated outputs as workflow artifacts.
+GitHub Actions runs tests on Python 3.10, 3.11, and 3.12. It also runs small `silive evaluate-chain`, `silive search-chain`, `silive chain-simulate`, `silive lab`, and `silive repair-study` smoke tests and uploads the generated outputs as workflow artifacts.
 
 ## What to test first
 
@@ -234,3 +255,4 @@ GitHub Actions runs tests on Python 3.10, 3.11, and 3.12. It also runs small `si
 4. When does `CAT` help stabilize otherwise bad chemistry?
 5. Which gene knockout causes extinction first?
 6. Which concrete symbolic chains cover the missing functions?
+7. Do high-scoring symbolic chains actually survive in Level 1 simulation?
