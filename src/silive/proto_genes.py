@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .rdkit_chemistry import MOTIF_NAMES, RDKitEvaluation, format_rdkit_scorecard
+from .rdkit_chemistry import RDKitEvaluation, format_rdkit_scorecard
+from .symbolic_graph import SymbolicGraph, build_symbolic_graph
 
 REQUIRED_FUNCTIONS = ("POL", "SEP", "SHELL", "REPAIR", "CAT")
 
@@ -26,33 +27,6 @@ def _motif_count(evaluation: RDKitEvaluation, motif: str) -> int:
     return int(evaluation.motifs.get(motif, 0))
 
 
-def _elements_for_ring(evaluation: RDKitEvaluation, ring: tuple[int, ...]) -> tuple[str, ...]:
-    by_index = {atom.index: atom.symbol for atom in evaluation.atoms}
-    return tuple(by_index[index] for index in ring if index in by_index)
-
-
-def _si_o_bond_count(evaluation: RDKitEvaluation) -> int:
-    count = 0
-    for bond in evaluation.bonds:
-        pair = {bond.begin_symbol, bond.end_symbol}
-        if pair == {"Si", "O"}:
-            count += 1
-    return count
-
-
-def _terminal_atom_count(evaluation: RDKitEvaluation) -> int:
-    return sum(1 for atom in evaluation.atoms if atom.degree <= 1)
-
-
-def _si_o_ring_count(evaluation: RDKitEvaluation) -> int:
-    count = 0
-    for ring in evaluation.rings:
-        elements = _elements_for_ring(evaluation, ring)
-        if elements and set(elements) <= {"Si", "O"} and "Si" in elements and "O" in elements:
-            count += 1
-    return count
-
-
 def _hit(
     gene_id: str,
     name: str,
@@ -73,45 +47,47 @@ def _hit(
     )
 
 
+def _absent_hits() -> list[ProtoGeneHit]:
+    return [
+        _hit("GENE_SI_TEMPLATE", "siloxane template", False, 0.0, tuple(), {"template": 0.0, "stability": 0.0}, ("POL", "SHELL")),
+        _hit("GENE_FE_CATALYSIS", "iron oxide catalysis", False, 0.0, tuple(), {"catalysis": 0.0}, ("CAT",)),
+        _hit("GENE_NI_CATALYSIS", "nickel oxide catalysis", False, 0.0, tuple(), {"catalysis": 0.0}, ("CAT",)),
+        _hit("GENE_P_REPAIR", "phosphate repair bridge", False, 0.0, tuple(), {"repair": 0.0, "template": 0.0}, ("REPAIR",)),
+        _hit("GENE_SILOXANE_SHELL", "siloxane shell network", False, 0.0, tuple(), {"stability": 0.0}, ("SHELL",)),
+        _hit("GENE_LABILE_SEPARATION", "labile separation handle", False, 0.0, tuple(), {"separation": 0.0}, ("SEP",)),
+    ]
+
+
+def _terminal_node_count(graph: SymbolicGraph) -> int:
+    return sum(1 for node in graph.nodes if "terminal" in node.tags)
+
+
 def detect_proto_genes(evaluation: RDKitEvaluation) -> list[ProtoGeneHit]:
     """Detect experimental chemical proto-genes from an RDKit evaluation."""
 
     if not evaluation.molecular_validity:
-        return [
-            _hit(
-                "GENE_SI_TEMPLATE",
-                "siloxane template",
-                False,
-                0.0,
-                tuple(),
-                {"template": 0.0, "stability": 0.0},
-                ("POL", "SHELL"),
-            ),
-            _hit("GENE_FE_CATALYSIS", "iron oxide catalysis", False, 0.0, tuple(), {"catalysis": 0.0}, ("CAT",)),
-            _hit("GENE_NI_CATALYSIS", "nickel oxide catalysis", False, 0.0, tuple(), {"catalysis": 0.0}, ("CAT",)),
-            _hit("GENE_P_REPAIR", "phosphate repair bridge", False, 0.0, tuple(), {"repair": 0.0, "template": 0.0}, ("REPAIR",)),
-            _hit("GENE_SILOXANE_SHELL", "siloxane shell network", False, 0.0, tuple(), {"stability": 0.0}, ("SHELL",)),
-            _hit("GENE_LABILE_SEPARATION", "labile separation handle", False, 0.0, tuple(), {"separation": 0.0}, ("SEP",)),
-        ]
+        return _absent_hits()
 
+    graph = build_symbolic_graph(evaluation)
+    properties = graph.graph_properties
+    tags = set(graph.topology_tags)
     si_template = _motif_count(evaluation, "Si-O-Si")
     fe_o = _motif_count(evaluation, "Fe-O")
     ni_o = _motif_count(evaluation, "Ni-O")
     p_o = _motif_count(evaluation, "P-O")
-    sio_bonds = _si_o_bond_count(evaluation)
-    sio_rings = _si_o_ring_count(evaluation)
-    terminal_atoms = _terminal_atom_count(evaluation)
-    fragment_count = len(evaluation.fragments)
-    si_count = evaluation.elements.count("Si")
-    o_count = evaluation.elements.count("O")
+    sio_bonds = int(properties.get("si_o_bond_count", 0.0))
+    ring_count = int(properties.get("ring_count", 0.0))
+    fragment_count = int(properties.get("fragment_count", 0.0))
+    network_score = float(properties.get("network_score", 0.0))
+    terminal_nodes = _terminal_node_count(graph)
 
-    dense_sio_network = si_count >= 2 and o_count >= 2 and sio_bonds >= 4
+    shell_present = "ring" in tags or "network" in tags or network_score >= 0.45
     labile_evidence = []
-    if fragment_count > 1:
+    if "fragmented" in tags or fragment_count > 1:
         labile_evidence.append(f"{fragment_count} separated fragments")
-    if terminal_atoms >= 2:
-        labile_evidence.append(f"{terminal_atoms} terminal atoms")
-    if fe_o or ni_o or p_o:
+    if terminal_nodes >= 2:
+        labile_evidence.append(f"{terminal_nodes} terminal nodes")
+    if "metal_center" in tags or "phosphate_bridge" in tags:
         labile_evidence.append("hetero-oxide bridge candidates")
 
     return [
@@ -154,19 +130,19 @@ def detect_proto_genes(evaluation: RDKitEvaluation) -> list[ProtoGeneHit]:
         _hit(
             "GENE_SILOXANE_SHELL",
             "siloxane shell network",
-            sio_rings > 0 or dense_sio_network,
-            (sio_rings + sio_bonds / 6),
-            tuple(filter(None, (f"Si/O rings: {sio_rings}" if sio_rings else "", f"Si-O bonds: {sio_bonds}"))),
-            {"stability": 0.22 * max(1, sio_rings) + 0.04 * sio_bonds},
+            shell_present,
+            network_score + ring_count * 0.25,
+            tuple(filter(None, (f"topology={','.join(graph.topology_tags)}", f"Si-O bonds: {sio_bonds}", f"rings: {ring_count}" if ring_count else ""))),
+            {"stability": 0.22 * max(1, ring_count) + 0.20 * network_score},
             ("SHELL",),
         ),
         _hit(
             "GENE_LABILE_SEPARATION",
             "labile separation handle",
             bool(labile_evidence),
-            (terminal_atoms / 6) + (fragment_count - 1) * 0.25,
+            (terminal_nodes / 6) + (fragment_count - 1) * 0.25,
             tuple(labile_evidence),
-            {"separation": 0.12 * terminal_atoms + 0.20 * max(0, fragment_count - 1)},
+            {"separation": 0.12 * terminal_nodes + 0.20 * max(0, fragment_count - 1)},
             ("SEP",),
         ),
     ]
