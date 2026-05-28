@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from .proto_genes import ProtoGeneHit, detect_proto_genes, proto_gene_summary
 from .rdkit_chemistry import RDKitEvaluation, format_rdkit_scorecard
+from .symbolic_graph import build_symbolic_graph
 
 MINIMAL_FUNCTIONS = ("TEMPLATE", "POLYMERIZE", "CATALYZE", "SEPARATE", "PROTECT", "REPAIR")
 
@@ -30,42 +31,39 @@ def _hit_strength(gene_hits: list[ProtoGeneHit], gene_id: str) -> float:
     return 0.0
 
 
-def _si_o_bond_count(evaluation: RDKitEvaluation) -> int:
-    count = 0
-    for bond in evaluation.bonds:
-        if {bond.begin_symbol, bond.end_symbol} == {"Si", "O"}:
-            count += 1
-    return count
+def _graph_strengths(evaluation: RDKitEvaluation) -> dict[str, float]:
+    graph = build_symbolic_graph(evaluation)
+    properties = graph.graph_properties
+    backbone_length = properties.get("backbone_length", 0.0)
+    network_score = properties.get("network_score", 0.0)
+    ring_count = properties.get("ring_count", 0.0)
+    fragment_count = properties.get("fragment_count", 0.0)
+    terminal_count = sum(1 for node in graph.nodes if "terminal" in node.tags)
+    return {
+        "polymerize": min(1.0, backbone_length / 7 + network_score * 0.45),
+        "protect": min(1.0, network_score + ring_count * 0.25),
+        "separate": min(1.0, terminal_count / 6 + max(0.0, fragment_count - 1) * 0.25),
+    }
 
 
-def _si_o_chain_or_network_strength(evaluation: RDKitEvaluation) -> float:
-    si_count = evaluation.elements.count("Si")
-    o_count = evaluation.elements.count("O")
-    sio_bonds = _si_o_bond_count(evaluation)
-    ring_bonus = 0.25 if evaluation.rings else 0.0
-    chain_score = min(1.0, sio_bonds / 6)
-    composition_bonus = 0.20 if si_count >= 2 and o_count >= 2 else 0.0
-    return min(1.0, chain_score + composition_bonus + ring_bonus)
-
-
-def _has_separation_handle(gene_hits: list[ProtoGeneHit], evaluation: RDKitEvaluation) -> bool:
+def _has_separation_handle(gene_hits: list[ProtoGeneHit], graph_strengths: dict[str, float]) -> bool:
     if _present(gene_hits, "GENE_LABILE_SEPARATION"):
         return True
-    return len(evaluation.fragments) > 1 or any(atom.degree <= 1 for atom in evaluation.atoms)
+    return graph_strengths["separate"] >= 0.25
 
 
 def _cover_functions(gene_hits: list[ProtoGeneHit], evaluation: RDKitEvaluation) -> tuple[set[str], dict[str, float]]:
     covered: set[str] = set()
     strengths = {function: 0.0 for function in MINIMAL_FUNCTIONS}
+    graph_strengths = _graph_strengths(evaluation)
 
     if _present(gene_hits, "GENE_SI_TEMPLATE"):
         covered.add("TEMPLATE")
         strengths["TEMPLATE"] = max(strengths["TEMPLATE"], _hit_strength(gene_hits, "GENE_SI_TEMPLATE"))
 
-    polymerize_strength = _si_o_chain_or_network_strength(evaluation)
-    if polymerize_strength >= 0.35:
+    if graph_strengths["polymerize"] >= 0.35:
         covered.add("POLYMERIZE")
-        strengths["POLYMERIZE"] = polymerize_strength
+        strengths["POLYMERIZE"] = graph_strengths["polymerize"]
 
     if _present(gene_hits, "GENE_FE_CATALYSIS") or _present(gene_hits, "GENE_NI_CATALYSIS"):
         covered.add("CATALYZE")
@@ -78,13 +76,13 @@ def _cover_functions(gene_hits: list[ProtoGeneHit], evaluation: RDKitEvaluation)
         covered.add("REPAIR")
         strengths["REPAIR"] = _hit_strength(gene_hits, "GENE_P_REPAIR")
 
-    if _present(gene_hits, "GENE_SILOXANE_SHELL"):
+    if _present(gene_hits, "GENE_SILOXANE_SHELL") or graph_strengths["protect"] >= 0.45:
         covered.add("PROTECT")
-        strengths["PROTECT"] = _hit_strength(gene_hits, "GENE_SILOXANE_SHELL")
+        strengths["PROTECT"] = max(_hit_strength(gene_hits, "GENE_SILOXANE_SHELL"), graph_strengths["protect"])
 
-    if _has_separation_handle(gene_hits, evaluation):
+    if _has_separation_handle(gene_hits, graph_strengths):
         covered.add("SEPARATE")
-        strengths["SEPARATE"] = max(0.25, _hit_strength(gene_hits, "GENE_LABILE_SEPARATION"))
+        strengths["SEPARATE"] = max(0.25, _hit_strength(gene_hits, "GENE_LABILE_SEPARATION"), graph_strengths["separate"])
 
     return covered, strengths
 
