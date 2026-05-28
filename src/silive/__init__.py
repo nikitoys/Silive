@@ -1,5 +1,13 @@
 """Silive proto-life simulation package."""
 
+from .chain_report import (
+    ChainReportPaths,
+    chain_score_dict,
+    create_chain_report,
+    format_chain_report,
+    simulation_summary_dict,
+    write_chain_report_outputs,
+)
 from .chain_simulation import ChainSimulationResult, format_chain_simulation, simulate_chain
 from .chemistry import (
     ENVIRONMENT_MODIFIERS,
@@ -56,4 +64,10 @@ __all__ = [
     "SUPPORTED_ENVIRONMENTS",
     "apply_environment_modifiers",
     "validate_environment",
+    "ChainReportPaths",
+    "chain_score_dict",
+    "simulation_summary_dict",
+    "format_chain_report",
+    "write_chain_report_outputs",
+    "create_chain_report",
 ]
