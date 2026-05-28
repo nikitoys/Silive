@@ -12,6 +12,7 @@ CHEMICAL_ALPHABET = frozenset({"Si", "O", "C", "Fe", "Mg", "Al", "H", "S", "P", 
 MUTATION_ELEMENTS = ("Si", "O", "C", "Fe", "Mg", "Al", "H", "S", "P", "N", "Ni")
 
 PROPERTY_NAMES = ("stability", "template", "catalysis", "repair", "separation")
+ENVIRONMENT_MODIFIED_PROPERTIES = ("stability", "catalysis", "repair", "separation")
 
 DEFAULT_BOND_PROPERTIES = {
     "stability": 0.10,
@@ -49,6 +50,15 @@ BOND_RULES: dict[tuple[str, str], dict[str, float]] = {
     ("Fe", "Fe"): {"stability": 0.20, "template": 0.05, "catalysis": 0.45, "repair": 0.05, "separation": 0.10},
 }
 
+ENVIRONMENT_MODIFIERS: dict[str, dict[str, float]] = {
+    "hydrothermal": {"stability": 0.94, "catalysis": 1.28, "repair": 1.10, "separation": 1.18},
+    "dry_hot": {"stability": 0.78, "catalysis": 1.12, "repair": 0.70, "separation": 1.30},
+    "acidic": {"stability": 0.72, "catalysis": 1.08, "repair": 0.72, "separation": 1.12},
+    "alkaline": {"stability": 1.08, "catalysis": 0.95, "repair": 1.10, "separation": 0.88},
+    "cold": {"stability": 1.14, "catalysis": 0.62, "repair": 0.86, "separation": 0.72},
+}
+SUPPORTED_ENVIRONMENTS = tuple(ENVIRONMENT_MODIFIERS)
+
 FUNCTION_THRESHOLDS = {
     "POL": 0.58,
     "SEP": 0.50,
@@ -71,6 +81,7 @@ VIABILITY_BONUS = {
 @dataclass(frozen=True, slots=True)
 class ChainEvaluation:
     chain: tuple[str, ...]
+    environment: str | None
     properties: dict[str, float]
     function_scores: dict[str, float]
     predicted_functions: tuple[str, ...]
@@ -104,6 +115,15 @@ def parse_chain(chain: str | Iterable[str]) -> tuple[str, ...]:
     return parts
 
 
+def validate_environment(environment: str | None) -> str | None:
+    if environment is None:
+        return None
+    if environment not in ENVIRONMENT_MODIFIERS:
+        allowed = ", ".join(SUPPORTED_ENVIRONMENTS)
+        raise ValueError(f"unknown environment: {environment}. Allowed: {allowed}")
+    return environment
+
+
 def bond_properties(left: str, right: str) -> dict[str, float]:
     rule = BOND_RULES.get((left, right), DEFAULT_BOND_PROPERTIES)
     return {name: float(rule.get(name, DEFAULT_BOND_PROPERTIES[name])) for name in PROPERTY_NAMES}
@@ -119,6 +139,18 @@ def average_chain_properties(chain: tuple[str, ...]) -> dict[str, float]:
             totals[name] += props[name]
 
     return {name: round(totals[name] / len(bonds), 3) for name in PROPERTY_NAMES}
+
+
+def apply_environment_modifiers(properties: dict[str, float], environment: str | None) -> dict[str, float]:
+    environment = validate_environment(environment)
+    if environment is None:
+        return dict(properties)
+
+    modifiers = ENVIRONMENT_MODIFIERS[environment]
+    adjusted = dict(properties)
+    for name in ENVIRONMENT_MODIFIED_PROPERTIES:
+        adjusted[name] = round(min(1.0, max(0.0, adjusted[name] * modifiers[name])), 3)
+    return adjusted
 
 
 def score_functions(properties: dict[str, float]) -> dict[str, float]:
@@ -189,9 +221,11 @@ def build_recommendations(missing_functions: tuple[str, ...]) -> tuple[str, ...]
     return tuple(recommendations)
 
 
-def evaluate_chain(chain: str | Iterable[str]) -> ChainEvaluation:
+def evaluate_chain(chain: str | Iterable[str], *, environment: str | None = None) -> ChainEvaluation:
+    environment = validate_environment(environment)
     parsed = parse_chain(chain)
-    properties = average_chain_properties(parsed)
+    base_properties = average_chain_properties(parsed)
+    properties = apply_environment_modifiers(base_properties, environment)
     function_scores = score_functions(properties)
     functions = predicted_functions(function_scores)
     missing = tuple(function for function in (*REQUIRED_FUNCTIONS, *LONG_TERM_FUNCTIONS) if function not in functions)
@@ -201,6 +235,7 @@ def evaluate_chain(chain: str | Iterable[str]) -> ChainEvaluation:
 
     return ChainEvaluation(
         chain=parsed,
+        environment=environment,
         properties=properties,
         function_scores=function_scores,
         predicted_functions=functions,
@@ -244,12 +279,14 @@ def search_chains(
     top_n: int = 10,
     seed: int | None = None,
     max_length: int = 16,
+    environment: str | None = None,
 ) -> list[ChainSearchResult]:
     if rounds <= 0:
         raise ValueError("rounds must be positive")
     if top_n <= 0:
         raise ValueError("top_n must be positive")
 
+    environment = validate_environment(environment)
     rng = random.Random(seed)
     source = parse_chain(seed_chain)
     seen: set[tuple[str, ...]] = set()
@@ -261,7 +298,7 @@ def search_chains(
             seen.add(current)
             candidates.append(
                 ChainSearchResult(
-                    evaluation=evaluate_chain(current),
+                    evaluation=evaluate_chain(current, environment=environment),
                     source_chain=source,
                     mutation_count=mutation_count,
                 )
@@ -285,6 +322,7 @@ def write_chain_search_csv(results: list[ChainSearchResult], output_path: str | 
     fieldnames = [
         "rank",
         "chain",
+        "environment",
         "viability_score",
         "viability",
         "predicted_functions",
@@ -311,6 +349,7 @@ def write_chain_search_csv(results: list[ChainSearchResult], output_path: str | 
                 {
                     "rank": rank,
                     "chain": "-".join(evaluation.chain),
+                    "environment": evaluation.environment or "none",
                     "viability_score": evaluation.viability_score,
                     "viability": evaluation.viability,
                     "predicted_functions": "+".join(evaluation.predicted_functions),
@@ -331,14 +370,14 @@ def write_chain_search_csv(results: list[ChainSearchResult], output_path: str | 
 
 
 def format_search_results(results: list[ChainSearchResult]) -> str:
-    lines = ["rank | score | viability | functions | chain"]
-    lines.append("--- | ---: | --- | --- | ---")
+    lines = ["rank | score | environment | viability | functions | chain"]
+    lines.append("--- | ---: | --- | --- | --- | ---")
     for rank, result in enumerate(results, start=1):
         evaluation = result.evaluation
         functions = "+".join(evaluation.predicted_functions) if evaluation.predicted_functions else "none"
         lines.append(
-            f"{rank} | {evaluation.viability_score:.3f} | {evaluation.viability} | "
-            f"{functions} | {'-'.join(evaluation.chain)}"
+            f"{rank} | {evaluation.viability_score:.3f} | {evaluation.environment or 'none'} | "
+            f"{evaluation.viability} | {functions} | {'-'.join(evaluation.chain)}"
         )
     return "\n".join(lines)
 
@@ -346,6 +385,7 @@ def format_search_results(results: list[ChainSearchResult]) -> str:
 def format_scorecard(evaluation: ChainEvaluation) -> str:
     lines = [
         f"chain: {'-'.join(evaluation.chain)}",
+        f"environment: {evaluation.environment or 'none'}",
         "",
         "properties:",
     ]
