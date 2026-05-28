@@ -38,6 +38,7 @@ def test_search_rdkit_candidates_ranks_valid_candidates(tmp_path) -> None:
     assert len(candidates) == 3
     assert candidates[0].name == "combo"
     assert candidates[0].candidate_score >= candidates[1].candidate_score
+    assert candidates[0].symbolic_graph.graph_properties["backbone_length"] > 0
     assert candidates[-1].name == "invalid"
     assert candidates[-1].candidate_score == 0.0
 
@@ -50,11 +51,17 @@ def test_candidate_rows_and_csv_output(tmp_path) -> None:
     candidates = search_rdkit_candidates(path, top=1)
     rows = candidate_rows(candidates)
     write_rdkit_search_csv(candidates, output)
+    csv_text = output.read_text(encoding="utf-8")
 
     assert rows[0]["rank"] == "1"
     assert rows[0]["name"] == "combo"
     assert rows[0]["molecular_validity"] == "true"
     assert "TEMPLATE" in rows[0]["covered_functions"]
     assert "GENE_SI_TEMPLATE" in rows[0]["detected_genes"]
+    assert rows[0]["topology_tags"]
+    assert float(rows[0]["backbone_length"]) > 0
+    assert "network_score" in rows[0]
     assert output.exists()
-    assert "rank,name,molecule,score" in output.read_text(encoding="utf-8")
+    assert "rank,name,molecule,score" in csv_text
+    assert "topology_tags" in csv_text
+    assert "backbone_length" in csv_text
