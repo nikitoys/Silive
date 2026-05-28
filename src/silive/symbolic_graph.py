@@ -75,10 +75,15 @@ def _edge_tags(left: str, right: str, bond_type: str) -> tuple[str, ...]:
     tags: list[str] = []
     if pair == {"Si", "O"}:
         tags.append("si_o_bridge")
+        tags.append("siloxane_bridge")
     if "O" in pair and pair & METAL_ELEMENTS:
         tags.append("metal_o_bridge")
+        tags.append("metal_oxide_bridge")
+        tags.append("labile_bridge_candidate")
     if pair == {"P", "O"}:
         tags.append("p_o_bridge")
+        tags.append("phosphate_bridge")
+        tags.append("labile_bridge_candidate")
     if bond_type.upper() == "SINGLE":
         tags.append("single")
     elif bond_type.upper() == "DOUBLE":
@@ -96,17 +101,60 @@ def _adjacency(edges: tuple[SymbolicEdge, ...], allowed: set[int] | None = None)
     return graph
 
 
-def _longest_path_for_component(adjacency: dict[int, set[int]], starts: set[int]) -> tuple[int, ...]:
+def _component_nodes(adjacency: dict[int, set[int]], start: int) -> set[int]:
+    seen = {start}
+    queue: deque[int] = deque([start])
+    while queue:
+        current = queue.popleft()
+        for neighbor in sorted(adjacency.get(current, set())):
+            if neighbor not in seen:
+                seen.add(neighbor)
+                queue.append(neighbor)
+    return seen
+
+
+def _farthest_shortest_path(adjacency: dict[int, set[int]], start: int) -> tuple[int, ...]:
+    parents: dict[int, int | None] = {start: None}
+    distances: dict[int, int] = {start: 0}
+    queue: deque[int] = deque([start])
+    farthest = start
+    while queue:
+        current = queue.popleft()
+        if (distances[current], current) > (distances[farthest], farthest):
+            farthest = current
+        for neighbor in sorted(adjacency.get(current, set())):
+            if neighbor not in parents:
+                parents[neighbor] = current
+                distances[neighbor] = distances[current] + 1
+                queue.append(neighbor)
+    return _reconstruct_path(parents, farthest)
+
+
+def _reconstruct_path(parents: dict[int, int | None], end: int) -> tuple[int, ...]:
+    path: list[int] = []
+    current: int | None = end
+    while current is not None:
+        path.append(current)
+        current = parents[current]
+    return tuple(reversed(path))
+
+
+def _canonical_path(path: tuple[int, ...]) -> tuple[int, ...]:
+    reversed_path = tuple(reversed(path))
+    return path if path <= reversed_path else reversed_path
+
+
+def _diameter_path_for_component(adjacency: dict[int, set[int]], starts: set[int]) -> tuple[int, ...]:
+    remaining = set(starts)
     best: tuple[int, ...] = tuple()
-    for start in starts:
-        queue: deque[tuple[int, tuple[int, ...]]] = deque([(start, (start,))])
-        while queue:
-            current, path = queue.popleft()
-            if len(path) > len(best):
-                best = path
-            for neighbor in sorted(adjacency.get(current, set())):
-                if neighbor not in path:
-                    queue.append((neighbor, (*path, neighbor)))
+    while remaining:
+        component = _component_nodes(adjacency, min(remaining))
+        remaining -= component
+        first_path = _farthest_shortest_path(adjacency, min(component))
+        second_path = _farthest_shortest_path(adjacency, first_path[-1])
+        candidate = _canonical_path(second_path)
+        if (len(candidate), tuple(reversed(candidate))) > (len(best), tuple(reversed(best))):
+            best = candidate
     return best
 
 
@@ -114,7 +162,7 @@ def _main_backbone(nodes: tuple[SymbolicNode, ...], edges: tuple[SymbolicEdge, .
     allowed = {node.index for node in nodes if node.element in BACKBONE_ELEMENTS and node.index in main_atoms}
     if not allowed:
         return tuple()
-    return _longest_path_for_component(_adjacency(edges, allowed), allowed)
+    return _diameter_path_for_component(_adjacency(edges, allowed), allowed)
 
 
 def _bond_counts(edges: tuple[SymbolicEdge, ...]) -> tuple[int, int, int]:
@@ -130,6 +178,15 @@ def _bond_counts(edges: tuple[SymbolicEdge, ...]) -> tuple[int, int, int]:
         if pair == {"P", "O"}:
             p_o += 1
     return si_o, metal_o, p_o
+
+
+def _bridge_counts(edges: tuple[SymbolicEdge, ...]) -> dict[str, int]:
+    return {
+        "siloxane_bridge_count": sum("siloxane_bridge" in edge.tags for edge in edges),
+        "metal_oxide_bridge_count": sum("metal_oxide_bridge" in edge.tags for edge in edges),
+        "phosphate_bridge_count": sum("phosphate_bridge" in edge.tags for edge in edges),
+        "labile_bridge_candidate_count": sum("labile_bridge_candidate" in edge.tags for edge in edges),
+    }
 
 
 def _topology_tags(
@@ -157,6 +214,8 @@ def _topology_tags(
         tags.append("phosphate_bridge")
     if properties["si_o_bond_count"] >= 2:
         tags.append("siloxane_rich")
+    if properties["labile_bridge_candidate_count"] > 0:
+        tags.append("labile_bridge_candidate")
     return tuple(tags)
 
 
@@ -201,6 +260,7 @@ def build_symbolic_graph(evaluation: RDKitEvaluation) -> SymbolicGraph:
     )
 
     si_o_bond_count, metal_o_bond_count, p_o_bond_count = _bond_counts(edges)
+    bridge_counts = _bridge_counts(edges)
     branch_count = sum(1 for node in nodes if node.degree >= 3)
     ring_count = len(evaluation.rings)
     fragment_count = len(fragments)
@@ -211,6 +271,10 @@ def build_symbolic_graph(evaluation: RDKitEvaluation) -> SymbolicGraph:
         "si_o_bond_count": float(si_o_bond_count),
         "metal_o_bond_count": float(metal_o_bond_count),
         "p_o_bond_count": float(p_o_bond_count),
+        "siloxane_bridge_count": float(bridge_counts["siloxane_bridge_count"]),
+        "metal_oxide_bridge_count": float(bridge_counts["metal_oxide_bridge_count"]),
+        "phosphate_bridge_count": float(bridge_counts["phosphate_bridge_count"]),
+        "labile_bridge_candidate_count": float(bridge_counts["labile_bridge_candidate_count"]),
         "ring_count": float(ring_count),
         "fragment_count": float(fragment_count),
         "branching_score": round(branching_score, 3),
@@ -243,6 +307,10 @@ def format_symbolic_graph_summary(graph: SymbolicGraph) -> str:
         "si_o_bond_count",
         "metal_o_bond_count",
         "p_o_bond_count",
+        "siloxane_bridge_count",
+        "metal_oxide_bridge_count",
+        "phosphate_bridge_count",
+        "labile_bridge_candidate_count",
         "ring_count",
         "fragment_count",
         "branching_score",

@@ -63,8 +63,8 @@ Acceptance criteria:
 
 Possible improvements:
 
-1. Replace brute-force longest path with a graph algorithm that scales better for larger graphs.
-2. Add explicit bridge classification:
+1. Replace brute-force longest path with a graph algorithm that scales better for larger graphs. Status: done.
+2. Add explicit bridge classification. Status: done.
    - siloxane bridge;
    - metal oxide bridge;
    - phosphate bridge;

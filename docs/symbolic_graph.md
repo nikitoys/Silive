@@ -28,7 +28,7 @@ The command prints:
 - `rings`: RDKit ring atom-index tuples;
 - `fragments`: separated molecular fragments;
 - `motifs`: RDKit motif counts;
-- `main_backbone`: longest Si/O/P/Fe/Ni path on the main fragment;
+- `main_backbone`: diameter-like Si/O/P/Fe/Ni path on the main fragment;
 - `topology_tags`: coarse topology labels;
 - `graph_properties`: numerical graph descriptors.
 
@@ -45,6 +45,7 @@ Possible tags:
 | `fragmented` | more than one fragment |
 | `metal_center` | Fe-O or Ni-O bridge present |
 | `phosphate_bridge` | P-O bridge present |
+| `labile_bridge_candidate` | metal-oxide or phosphate bridge candidate present |
 | `siloxane_rich` | multiple Si-O bonds |
 
 ## Graph properties
@@ -54,11 +55,15 @@ Possible tags:
 | `si_o_bond_count` | number of Si-O bonds |
 | `metal_o_bond_count` | number of Fe-O/Ni-O bonds |
 | `p_o_bond_count` | number of P-O bonds |
+| `siloxane_bridge_count` | number of explicitly classified Si-O siloxane bridges |
+| `metal_oxide_bridge_count` | number of explicitly classified Fe-O/Ni-O bridges |
+| `phosphate_bridge_count` | number of explicitly classified P-O bridges |
+| `labile_bridge_candidate_count` | number of bridge candidates treated as labile/separation handles |
 | `ring_count` | number of rings |
 | `fragment_count` | number of fragments |
 | `branching_score` | fraction of high-degree branch nodes |
 | `network_score` | heuristic network density score |
-| `backbone_length` | longest Si/O/P/Fe/Ni path length |
+| `backbone_length` | diameter-like Si/O/P/Fe/Ni backbone path length |
 
 ## Integration
 
