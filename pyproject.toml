@@ -26,7 +26,7 @@ chem = [
 ]
 
 [project.scripts]
-silive = "silive.cli_with_reactions:main"
+silive = "silive.cli_with_evolution:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
