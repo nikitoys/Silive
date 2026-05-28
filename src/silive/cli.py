@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import argparse
 from itertools import combinations
+from pathlib import Path
 
 from .model import ALL_GENES, SimulationConfig, compare_gene_sets, simulate
+from .plot import SUPPORTED_METRICS, plot_phase_map, write_multiple_plots
 from .sweep import SweepConfig, linspace, run_sweep, write_csv
 
 
@@ -20,6 +22,37 @@ def _print_generation(record: dict) -> None:
         f"stab={record['avg_stability']:.3f} | "
         f"fit={record['best_fitness']:.2f}"
     )
+
+
+def _make_sweep_config(args: argparse.Namespace) -> SweepConfig:
+    return SweepConfig(
+        mutation_rates=linspace(args.mutation_start, args.mutation_stop, args.mutation_steps),
+        shell_bonuses=linspace(args.shell_start, args.shell_stop, args.shell_steps),
+        genes=frozenset(args.genes),
+        generations=args.generations,
+        runs=args.runs,
+        population_limit=args.population_limit,
+        start_population=args.start_population,
+        start_sequence=args.sequence,
+        gene_mutation_rate=args.gene_mutation_rate,
+        seed=args.seed,
+    )
+
+
+def _write_sweep_outputs(args: argparse.Namespace, output: str | Path) -> list[dict]:
+    rows = run_sweep(_make_sweep_config(args))
+    write_csv(rows, output)
+    return rows
+
+
+def _print_zone_summary(rows: list[dict]) -> None:
+    zones: dict[str, int] = {}
+    for row in rows:
+        zones[row["zone"]] = zones.get(row["zone"], 0) + 1
+
+    print("zones:")
+    for zone, count in sorted(zones.items()):
+        print(f"  {zone}: {count}")
 
 
 def run_simulate(args: argparse.Namespace) -> None:
@@ -81,32 +114,49 @@ def run_compare(args: argparse.Namespace) -> None:
 
 
 def run_sweep_command(args: argparse.Namespace) -> None:
-    mutation_rates = linspace(args.mutation_start, args.mutation_stop, args.mutation_steps)
-    shell_bonuses = linspace(args.shell_start, args.shell_stop, args.shell_steps)
-    rows = run_sweep(
-        SweepConfig(
-            mutation_rates=mutation_rates,
-            shell_bonuses=shell_bonuses,
-            genes=frozenset(args.genes),
-            generations=args.generations,
-            runs=args.runs,
-            population_limit=args.population_limit,
-            start_population=args.start_population,
-            start_sequence=args.sequence,
-            gene_mutation_rate=args.gene_mutation_rate,
-            seed=args.seed,
-        )
-    )
-    write_csv(rows, args.output)
-
-    zones: dict[str, int] = {}
-    for row in rows:
-        zones[row["zone"]] = zones.get(row["zone"], 0) + 1
-
+    rows = _write_sweep_outputs(args, args.output)
     print(f"wrote {len(rows)} phase-map rows to {args.output}")
-    print("zones:")
-    for zone, count in sorted(zones.items()):
-        print(f"  {zone}: {count}")
+    _print_zone_summary(rows)
+
+
+def run_plot_command(args: argparse.Namespace) -> None:
+    plot_phase_map(args.csv, args.output, metric=args.metric, title=args.title)
+    print(f"wrote {args.metric} plot to {args.output}")
+
+
+def run_lab_command(args: argparse.Namespace) -> None:
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    csv_path = output_dir / "phase_map.csv"
+
+    rows = _write_sweep_outputs(args, csv_path)
+    plot_paths = write_multiple_plots(
+        csv_path,
+        output_dir,
+        metrics=("survival_rate", "code_preservation_rate"),
+    )
+
+    print(f"wrote {len(rows)} phase-map rows to {csv_path}")
+    for path in plot_paths:
+        print(f"wrote plot to {path}")
+    _print_zone_summary(rows)
+
+
+def _add_sweep_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--mutation-start", type=float, default=0.0)
+    parser.add_argument("--mutation-stop", type=float, default=0.30)
+    parser.add_argument("--mutation-steps", type=int, default=16)
+    parser.add_argument("--shell-start", type=float, default=0.0)
+    parser.add_argument("--shell-stop", type=float, default=0.40)
+    parser.add_argument("--shell-steps", type=int, default=16)
+    parser.add_argument("--genes", nargs="+", default=["POL", "SEP", "SHELL", "REPAIR"], choices=ALL_GENES)
+    parser.add_argument("--generations", type=int, default=100)
+    parser.add_argument("--runs", type=int, default=20)
+    parser.add_argument("--population-limit", type=int, default=100)
+    parser.add_argument("--start-population", type=int, default=10)
+    parser.add_argument("--sequence", default="ABABAB")
+    parser.add_argument("--gene-mutation-rate", type=float, default=0.03)
+    parser.add_argument("--seed", type=int, default=None)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -134,22 +184,21 @@ def build_parser() -> argparse.ArgumentParser:
     compare_parser.set_defaults(func=run_compare)
 
     sweep_parser = subparsers.add_parser("sweep", help="export a mutation/shell phase map as CSV")
-    sweep_parser.add_argument("--mutation-start", type=float, default=0.0)
-    sweep_parser.add_argument("--mutation-stop", type=float, default=0.30)
-    sweep_parser.add_argument("--mutation-steps", type=int, default=16)
-    sweep_parser.add_argument("--shell-start", type=float, default=0.0)
-    sweep_parser.add_argument("--shell-stop", type=float, default=0.40)
-    sweep_parser.add_argument("--shell-steps", type=int, default=16)
-    sweep_parser.add_argument("--genes", nargs="+", default=["POL", "SEP", "SHELL", "REPAIR"], choices=ALL_GENES)
-    sweep_parser.add_argument("--generations", type=int, default=100)
-    sweep_parser.add_argument("--runs", type=int, default=20)
-    sweep_parser.add_argument("--population-limit", type=int, default=100)
-    sweep_parser.add_argument("--start-population", type=int, default=10)
-    sweep_parser.add_argument("--sequence", default="ABABAB")
-    sweep_parser.add_argument("--gene-mutation-rate", type=float, default=0.03)
-    sweep_parser.add_argument("--seed", type=int, default=None)
+    _add_sweep_arguments(sweep_parser)
     sweep_parser.add_argument("--output", default="phase_map.csv")
     sweep_parser.set_defaults(func=run_sweep_command)
+
+    plot_parser = subparsers.add_parser("plot", help="plot a phase-map CSV as a PNG heatmap")
+    plot_parser.add_argument("csv")
+    plot_parser.add_argument("--metric", choices=SUPPORTED_METRICS, default="survival_rate")
+    plot_parser.add_argument("--output", default="phase_map.png")
+    plot_parser.add_argument("--title", default=None)
+    plot_parser.set_defaults(func=run_plot_command)
+
+    lab_parser = subparsers.add_parser("lab", help="run sweep and create default phase-map plots")
+    _add_sweep_arguments(lab_parser)
+    lab_parser.add_argument("--output-dir", default="outputs")
+    lab_parser.set_defaults(func=run_lab_command)
 
     return parser
 
