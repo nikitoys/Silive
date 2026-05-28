@@ -4,11 +4,12 @@ import argparse
 import sys
 
 from . import cli as base_cli
-from .proto_genes import format_rdkit_gene_scorecard
-from .proto_genome import format_rdkit_genome_scorecard
-from .rdkit_chemistry import RDKitUnavailableError, evaluate_rdkit_molecule
+from .proto_genes import detect_proto_genes, format_rdkit_gene_scorecard, proto_gene_summary
+from .proto_genome import evaluate_proto_genome, format_proto_genome_evaluation, format_rdkit_genome_scorecard
+from .rdkit_chemistry import RDKitUnavailableError, evaluate_rdkit_molecule, format_rdkit_scorecard
 from .rdkit_cli import run_rdkit_evaluate_text
 from .rdkit_search import format_rdkit_search_table, search_rdkit_candidates, write_rdkit_search_csv
+from .symbolic_graph import build_symbolic_graph, format_symbolic_graph_summary
 
 
 def _parse_molecule_command(prog: str, args: list[str]) -> argparse.Namespace:
@@ -25,20 +26,35 @@ def _parse_search_command(args: list[str]) -> argparse.Namespace:
     return parser.parse_args(args)
 
 
-def run_rdkit_gene_evaluate_text(molecule: str) -> str:
+def _load_evaluation(molecule: str):
     try:
-        evaluation = evaluate_rdkit_molecule(molecule)
+        return evaluate_rdkit_molecule(molecule)
     except RDKitUnavailableError as exc:
         raise SystemExit(str(exc)) from exc
-    return format_rdkit_gene_scorecard(evaluation)
+
+
+def run_rdkit_gene_evaluate_text(molecule: str) -> str:
+    return format_rdkit_gene_scorecard(_load_evaluation(molecule))
 
 
 def run_rdkit_genome_evaluate_text(molecule: str) -> str:
-    try:
-        evaluation = evaluate_rdkit_molecule(molecule)
-    except RDKitUnavailableError as exc:
-        raise SystemExit(str(exc)) from exc
-    return format_rdkit_genome_scorecard(evaluation)
+    return format_rdkit_genome_scorecard(_load_evaluation(molecule))
+
+
+def run_rdkit_graph_evaluate_text(molecule: str) -> str:
+    evaluation = _load_evaluation(molecule)
+    graph = build_symbolic_graph(evaluation)
+    gene_hits = detect_proto_genes(evaluation)
+    genome = evaluate_proto_genome(gene_hits, evaluation)
+    return (
+        format_rdkit_scorecard(evaluation)
+        + "\n\n"
+        + format_symbolic_graph_summary(graph)
+        + "\n\n"
+        + proto_gene_summary(gene_hits)
+        + "\n\n"
+        + format_proto_genome_evaluation(genome)
+    )
 
 
 def run_rdkit_search_command(args: argparse.Namespace) -> str:
@@ -65,6 +81,11 @@ def main(argv: list[str] | None = None) -> None:
     if args and args[0] == "rdkit-genome-evaluate":
         parsed = _parse_molecule_command("silive rdkit-genome-evaluate", args[1:])
         print(run_rdkit_genome_evaluate_text(parsed.molecule))
+        return
+
+    if args and args[0] == "rdkit-graph-evaluate":
+        parsed = _parse_molecule_command("silive rdkit-graph-evaluate", args[1:])
+        print(run_rdkit_graph_evaluate_text(parsed.molecule))
         return
 
     if args and args[0] == "rdkit-search":
