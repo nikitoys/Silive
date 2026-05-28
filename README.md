@@ -145,6 +145,28 @@ outputs/survival_rate.png
 outputs/code_preservation_rate.png
 ```
 
+## Study the REPAIR gene
+
+`silive repair-study` compares `POL + SEP + SHELL` against `POL + SEP + SHELL + REPAIR` and writes CSV files with the delta in survival, code preservation, stability, fitness, and zone classification.
+
+```bash
+silive repair-study \
+  --mutation-steps 16 \
+  --shell-steps 16 \
+  --runs 30 \
+  --generations 100 \
+  --output-dir outputs/repair_study
+```
+
+Outputs:
+
+```text
+outputs/repair_study/without_repair.csv
+outputs/repair_study/with_repair.csv
+outputs/repair_study/repair_delta.csv
+outputs/repair_study/repair_summary.txt
+```
+
 ## Run tests
 
 ```bash
@@ -153,7 +175,7 @@ pytest
 
 ## Continuous integration
 
-GitHub Actions runs tests on Python 3.10, 3.11, and 3.12. It also runs a small `silive lab` smoke test and uploads the generated CSV/PNG outputs as workflow artifacts.
+GitHub Actions runs tests on Python 3.10, 3.11, and 3.12. It also runs small `silive lab` and `silive repair-study` smoke tests and uploads the generated outputs as workflow artifacts.
 
 ## What to test first
 
