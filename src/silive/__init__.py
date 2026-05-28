@@ -36,6 +36,18 @@ from .environment_sweep import (
     write_environment_sweep_outputs,
 )
 from .model import ALL_GENES, PAIR_STABILITY, ProtoLife, SimulationConfig, compare_gene_sets, simulate
+from .niche_search import (
+    NicheCandidate,
+    NicheSearchPaths,
+    NicheSearchResult,
+    format_niche_ranking,
+    niche_candidate_row,
+    niche_candidate_sort_key,
+    niche_search_payload,
+    niche_search_rows,
+    run_niche_search,
+    write_niche_search_outputs,
+)
 from .plot import PhaseGrid, make_phase_grid, plot_phase_map, read_phase_map
 from .study import RepairStudyResult, build_delta_rows, run_repair_study, summarize_repair_effect
 from .sweep import SweepConfig, linspace, run_sweep, write_csv
@@ -90,4 +102,14 @@ __all__ = [
     "run_environment_sweep",
     "write_environment_sweep_outputs",
     "format_environment_ranking",
+    "NicheCandidate",
+    "NicheSearchPaths",
+    "NicheSearchResult",
+    "niche_candidate_row",
+    "niche_candidate_sort_key",
+    "niche_search_rows",
+    "niche_search_payload",
+    "run_niche_search",
+    "write_niche_search_outputs",
+    "format_niche_ranking",
 ]
