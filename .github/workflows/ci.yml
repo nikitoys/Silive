@@ -61,6 +61,14 @@ jobs:
             echo "Proto-genome layer unavailable as expected in base CI"
           fi
 
+      - name: Run symbolic graph command smoke test without optional dependency
+        run: |
+          if silive rdkit-graph-evaluate "[Si]O[Si]O[Fe]OP(=O)(O)O[Si]"; then
+            echo "Symbolic graph layer available"
+          else
+            echo "Symbolic graph layer unavailable as expected in base CI"
+          fi
+
       - name: Run RDKit search smoke test without optional dependency
         run: |
           if silive rdkit-search examples/rdkit_candidates.smi --output outputs/rdkit_search.csv --top 5; then
