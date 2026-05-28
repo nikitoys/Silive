@@ -6,6 +6,7 @@ from pathlib import Path
 
 from .chain_simulation import format_chain_simulation, simulate_chain
 from .chemistry import (
+    SUPPORTED_ENVIRONMENTS,
     evaluate_chain,
     format_scorecard,
     format_search_results,
@@ -165,7 +166,7 @@ def run_repair_study_command(args: argparse.Namespace) -> None:
 
 
 def run_evaluate_chain_command(args: argparse.Namespace) -> None:
-    evaluation = evaluate_chain(args.chain)
+    evaluation = evaluate_chain(args.chain, environment=args.environment)
     print(format_scorecard(evaluation))
 
 
@@ -176,6 +177,7 @@ def run_search_chain_command(args: argparse.Namespace) -> None:
         top_n=args.top,
         seed=args.random_seed,
         max_length=args.max_length,
+        environment=args.environment,
     )
     write_chain_search_csv(results, args.output)
     print(format_search_results(results))
@@ -185,6 +187,7 @@ def run_search_chain_command(args: argparse.Namespace) -> None:
 def run_chain_simulate_command(args: argparse.Namespace) -> None:
     result = simulate_chain(
         args.chain,
+        environment=args.environment,
         generations=args.generations,
         runs=args.runs,
         seed=args.seed,
@@ -213,6 +216,15 @@ def _add_sweep_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--sequence", default="ABABAB")
     parser.add_argument("--gene-mutation-rate", type=float, default=0.03)
     parser.add_argument("--seed", type=int, default=None)
+
+
+def _add_environment_argument(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--environment",
+        choices=SUPPORTED_ENVIRONMENTS,
+        default=None,
+        help="symbolic environment modifier",
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -269,6 +281,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="evaluate a concrete symbolic element chain against proto-life functions",
     )
     evaluate_chain_parser.add_argument("chain", help="element chain such as Si-O-Si-O-Fe-O-Si")
+    _add_environment_argument(evaluate_chain_parser)
     evaluate_chain_parser.set_defaults(func=run_evaluate_chain_command)
 
     search_chain_parser = subparsers.add_parser(
@@ -281,6 +294,7 @@ def build_parser() -> argparse.ArgumentParser:
     search_chain_parser.add_argument("--random-seed", type=int, default=None)
     search_chain_parser.add_argument("--max-length", type=int, default=16)
     search_chain_parser.add_argument("--output", default="chain_search.csv")
+    _add_environment_argument(search_chain_parser)
     search_chain_parser.set_defaults(func=run_search_chain_command)
 
     chain_simulate_parser = subparsers.add_parser(
@@ -288,6 +302,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="evaluate a symbolic chain and simulate its predicted proto-life functions",
     )
     chain_simulate_parser.add_argument("chain", help="element chain such as Si-O-Si-O-Fe-O-Si")
+    _add_environment_argument(chain_simulate_parser)
     chain_simulate_parser.add_argument("--generations", type=int, default=100)
     chain_simulate_parser.add_argument("--runs", type=int, default=20)
     chain_simulate_parser.add_argument("--seed", type=int, default=None)
