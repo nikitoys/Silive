@@ -31,6 +31,40 @@ Genes are probability modifiers:
 | `REPAIR` | lowers mutation rate |
 | `CAT` | catalytic center; slightly stabilizes weak pairs |
 
+## Level 2 symbolic chemistry
+
+Level 2 evaluates concrete symbolic element chains against the proto-life functions used by the Level 1 simulator.
+
+Example:
+
+```bash
+silive evaluate-chain "Si-O-Si-O-Fe-O-Si"
+```
+
+The evaluator parses the chain, scores symbolic bond properties, maps those properties to proto-life functions, and prints a scorecard.
+
+Scored properties:
+
+| Property | Meaning |
+| --- | --- |
+| `stability` | scaffold persistence |
+| `template` | ability to act as a repeatable copying pattern |
+| `catalysis` | catalytic-center potential |
+| `repair` | defect-correction potential |
+| `separation` | ability to separate a copy without destroying the template |
+
+Function mapping:
+
+| Function | Main source |
+| --- | --- |
+| `POL` | template + catalysis |
+| `SEP` | separation |
+| `SHELL` | stability |
+| `REPAIR` | repair + template |
+| `CAT` | catalysis |
+
+The scorecard also shows missing functions and a rough viability class such as `weak_candidate`, `incomplete_proto_life_candidate`, `proto_life_candidate`, or `stable_proto_life_candidate`.
+
 ## Install
 
 ```bash
@@ -175,7 +209,7 @@ pytest
 
 ## Continuous integration
 
-GitHub Actions runs tests on Python 3.10, 3.11, and 3.12. It also runs small `silive lab` and `silive repair-study` smoke tests and uploads the generated outputs as workflow artifacts.
+GitHub Actions runs tests on Python 3.10, 3.11, and 3.12. It also runs small `silive evaluate-chain`, `silive lab`, and `silive repair-study` smoke tests and uploads the generated outputs as workflow artifacts.
 
 ## What to test first
 
@@ -184,3 +218,4 @@ GitHub Actions runs tests on Python 3.10, 3.11, and 3.12. It also runs small `si
 3. Does `POL` become useless without `SEP`?
 4. When does `CAT` help stabilize otherwise bad chemistry?
 5. Which gene knockout causes extinction first?
+6. Which concrete symbolic chains cover the missing functions?
