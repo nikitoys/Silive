@@ -65,6 +65,26 @@ Function mapping:
 
 The scorecard also shows missing functions and a rough viability class such as `weak_candidate`, `incomplete_proto_life_candidate`, `proto_life_candidate`, or `stable_proto_life_candidate`.
 
+## Symbolic environments
+
+`evaluate-chain`, `search-chain`, and `chain-simulate` can apply simplified environmental modifiers:
+
+```bash
+silive evaluate-chain "Si-O-Si-O-Fe-O-Si" --environment hydrothermal
+```
+
+Supported environments:
+
+| Environment | stability | catalysis | repair | separation |
+| --- | ---: | ---: | ---: | ---: |
+| `hydrothermal` | x0.94 | x1.28 | x1.10 | x1.18 |
+| `dry_hot` | x0.78 | x1.12 | x0.70 | x1.30 |
+| `acidic` | x0.72 | x1.08 | x0.72 | x1.12 |
+| `alkaline` | x1.08 | x0.95 | x1.10 | x0.88 |
+| `cold` | x1.14 | x0.62 | x0.86 | x0.72 |
+
+The `template` property is intentionally not modified yet; this keeps the environment layer simple and lets the model isolate scaffold/catalysis/separation effects.
+
 ## Search symbolic chains
 
 `silive search-chain` mutates a seed chain, evaluates every candidate with the same Level 2 scorecard, sorts by `viability_score`, prints the top candidates, and writes a CSV table.
@@ -75,10 +95,11 @@ silive search-chain \
   --rounds 1000 \
   --top 20 \
   --random-seed 42 \
+  --environment hydrothermal \
   --output outputs/chain_search.csv
 ```
 
-The CSV includes each candidate chain, viability score, predicted functions, missing functions, symbolic properties, function scores, and mutation count.
+The CSV includes each candidate chain, environment, viability score, predicted functions, missing functions, symbolic properties, function scores, and mutation count.
 
 ## Simulate a symbolic chain
 
@@ -86,6 +107,7 @@ The CSV includes each candidate chain, viability score, predicted functions, mis
 
 ```bash
 silive chain-simulate "Si-O-Si-O-Fe-O-Si" \
+  --environment hydrothermal \
   --generations 100 \
   --runs 30 \
   --seed 42
