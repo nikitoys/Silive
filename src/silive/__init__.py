@@ -2,6 +2,7 @@
 
 from .model import ALL_GENES, PAIR_STABILITY, ProtoLife, SimulationConfig, compare_gene_sets, simulate
 from .plot import PhaseGrid, make_phase_grid, plot_phase_map, read_phase_map
+from .study import RepairStudyResult, build_delta_rows, run_repair_study, summarize_repair_effect
 from .sweep import SweepConfig, linspace, run_sweep, write_csv
 
 __all__ = [
@@ -19,4 +20,8 @@ __all__ = [
     "read_phase_map",
     "make_phase_grid",
     "plot_phase_map",
+    "RepairStudyResult",
+    "build_delta_rows",
+    "run_repair_study",
+    "summarize_repair_effect",
 ]
