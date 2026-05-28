@@ -83,7 +83,7 @@ jobs:
             --top 3 \
             --generations 3 \
             --runs 1 \
-            --seed 42 \
+            --random-seed 42 \
             --output-dir outputs/niche_search
 
       - name: Run quick visual lab smoke test
