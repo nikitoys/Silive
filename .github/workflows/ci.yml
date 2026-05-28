@@ -58,6 +58,15 @@ jobs:
             --runs 2 \
             --seed 42
 
+      - name: Run quick chain report smoke test
+        run: |
+          silive chain-report "Si-O-Si-O-Fe-O-Si" \
+            --environment hydrothermal \
+            --generations 5 \
+            --runs 2 \
+            --seed 42 \
+            --output-dir outputs/chain_report
+
       - name: Run quick visual lab smoke test
         run: |
           silive lab \
