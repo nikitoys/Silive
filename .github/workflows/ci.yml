@@ -93,6 +93,14 @@ jobs:
             echo "Reaction search unavailable as expected in base CI"
           fi
 
+      - name: Run evolutionary search smoke test without optional dependency
+        run: |
+          if silive rdkit-evolve examples/rdkit_candidates.smi --generations 2 --population-size 6 --elite-size 2 --output-dir outputs/evolution --seed 42; then
+            echo "Evolutionary search available"
+          else
+            echo "Evolutionary search unavailable as expected in base CI"
+          fi
+
       - name: Run environment chemistry smoke test
         run: silive evaluate-chain "Si-O-Si-O-Fe-O-Si" --environment hydrothermal
 
