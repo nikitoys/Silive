@@ -1,6 +1,16 @@
 """Silive proto-life simulation package."""
 
-from .chemistry import ChainEvaluation, evaluate_chain, format_scorecard, parse_chain
+from .chemistry import (
+    ChainEvaluation,
+    ChainSearchResult,
+    evaluate_chain,
+    format_scorecard,
+    format_search_results,
+    mutate_chain,
+    parse_chain,
+    search_chains,
+    write_chain_search_csv,
+)
 from .model import ALL_GENES, PAIR_STABILITY, ProtoLife, SimulationConfig, compare_gene_sets, simulate
 from .plot import PhaseGrid, make_phase_grid, plot_phase_map, read_phase_map
 from .study import RepairStudyResult, build_delta_rows, run_repair_study, summarize_repair_effect
@@ -26,7 +36,12 @@ __all__ = [
     "run_repair_study",
     "summarize_repair_effect",
     "ChainEvaluation",
+    "ChainSearchResult",
     "parse_chain",
     "evaluate_chain",
     "format_scorecard",
+    "mutate_chain",
+    "search_chains",
+    "write_chain_search_csv",
+    "format_search_results",
 ]
