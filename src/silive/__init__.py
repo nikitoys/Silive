@@ -1,5 +1,6 @@
 """Silive proto-life simulation package."""
 
+from .chain_simulation import ChainSimulationResult, format_chain_simulation, simulate_chain
 from .chemistry import (
     ChainEvaluation,
     ChainSearchResult,
@@ -44,4 +45,7 @@ __all__ = [
     "search_chains",
     "write_chain_search_csv",
     "format_search_results",
+    "ChainSimulationResult",
+    "simulate_chain",
+    "format_chain_simulation",
 ]
