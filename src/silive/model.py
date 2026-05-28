@@ -27,7 +27,8 @@ TARGET_SEQUENCE = "ABABAB"
 
 CAT_WEAK_PAIR_BONUS = 0.05
 CAT_ENERGY_BONUS = 0.20
-SHELL_SURVIVAL_BONUS = 0.15
+DEFAULT_SHELL_SURVIVAL_BONUS = 0.15
+SHELL_SURVIVAL_BONUS = DEFAULT_SHELL_SURVIVAL_BONUS
 SEP_SEPARATION_CHANCE = 0.70
 NO_SEP_SEPARATION_CHANCE = 0.02
 BASE_COPY_ENERGY_COST = 3.0
@@ -43,6 +44,7 @@ class SimulationConfig:
     start_genes: frozenset[str] = frozenset({"POL", "SEP", "SHELL"})
     base_mutation_rate: float = 0.08
     gene_mutation_rate: float = 0.03
+    shell_survival_bonus: float = DEFAULT_SHELL_SURVIVAL_BONUS
     seed: int | None = None
 
 
@@ -54,6 +56,7 @@ class ProtoLife:
     alive: bool = True
     base_mutation_rate: float = 0.08
     gene_mutation_rate: float = 0.03
+    shell_survival_bonus: float = DEFAULT_SHELL_SURVIVAL_BONUS
 
     def pair_stability(self, left: str, right: str) -> float:
         base = PAIR_STABILITY.get((left, right), 0.10)
@@ -73,7 +76,7 @@ class ProtoLife:
     def survival_chance(self) -> float:
         chance = self.stability()
         if "SHELL" in self.genes:
-            chance += SHELL_SURVIVAL_BONUS
+            chance += self.shell_survival_bonus
         return min(chance, 0.98)
 
     def copy_speed(self) -> float:
@@ -128,6 +131,7 @@ class ProtoLife:
             energy=5.0,
             base_mutation_rate=self.base_mutation_rate,
             gene_mutation_rate=self.gene_mutation_rate,
+            shell_survival_bonus=self.shell_survival_bonus,
         )
         self.energy -= energy_cost
         return child
@@ -167,6 +171,7 @@ def _make_initial_population(config: SimulationConfig) -> list[ProtoLife]:
             energy=10.0,
             base_mutation_rate=config.base_mutation_rate,
             gene_mutation_rate=config.gene_mutation_rate,
+            shell_survival_bonus=config.shell_survival_bonus,
         )
         for _ in range(config.start_population)
     ]
@@ -238,6 +243,7 @@ def compare_gene_sets(
     runs: int = 20,
     seed: int | None = None,
     base_mutation_rate: float = 0.08,
+    shell_survival_bonus: float = DEFAULT_SHELL_SURVIVAL_BONUS,
 ) -> list[dict]:
     rng = random.Random(seed)
     results: list[dict] = []
@@ -255,6 +261,7 @@ def compare_gene_sets(
                     generations=generations,
                     start_genes=frozenset(genes),
                     base_mutation_rate=base_mutation_rate,
+                    shell_survival_bonus=shell_survival_bonus,
                     seed=run_seed,
                 )
             )
