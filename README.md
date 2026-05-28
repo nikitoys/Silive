@@ -67,7 +67,7 @@ The scorecard also shows missing functions and a rough viability class such as `
 
 ## Symbolic environments
 
-`evaluate-chain`, `search-chain`, `chain-simulate`, `chain-report`, and `environment-sweep` can apply simplified environmental modifiers:
+`evaluate-chain`, `search-chain`, `chain-simulate`, `chain-report`, `environment-sweep`, and `niche-search` can apply simplified environmental modifiers:
 
 ```bash
 silive evaluate-chain "Si-O-Si-O-Fe-O-Si" --environment hydrothermal
@@ -178,6 +178,30 @@ cold
 ```
 
 The CSV includes symbolic properties, function scores, predicted/missing functions, viability class, viability score, survival rate, code preservation rate, and final population for each environment.
+
+## Search ecological niches
+
+`silive niche-search` mutates a seed chain, runs every candidate through all environments, and ranks concrete `chain + environment` pairs by `viability_score`, `survival_rate`, `code_preservation_rate`, and final population.
+
+```bash
+silive niche-search \
+  --seed "Si-O-Si-O-Fe-O-Si" \
+  --rounds 100 \
+  --top 20 \
+  --generations 100 \
+  --runs 30 \
+  --random-seed 42 \
+  --output-dir outputs/niche_search
+```
+
+Outputs:
+
+```text
+outputs/niche_search/niche_search.csv
+outputs/niche_search/niche_search.json
+```
+
+This is useful when the question is not only “which chain is good?” but “which chain becomes good in which environment?”.
 
 ## Install
 
@@ -323,7 +347,7 @@ pytest
 
 ## Continuous integration
 
-GitHub Actions runs tests on Python 3.10, 3.11, and 3.12. It also runs small `silive evaluate-chain`, `silive search-chain`, `silive chain-simulate`, `silive chain-report`, `silive environment-sweep`, `silive lab`, and `silive repair-study` smoke tests and uploads the generated outputs as workflow artifacts.
+GitHub Actions runs tests on Python 3.10, 3.11, and 3.12. It also runs small `silive evaluate-chain`, `silive search-chain`, `silive chain-simulate`, `silive chain-report`, `silive environment-sweep`, `silive niche-search`, `silive lab`, and `silive repair-study` smoke tests and uploads the generated outputs as workflow artifacts.
 
 ## What to test first
 
@@ -334,3 +358,4 @@ GitHub Actions runs tests on Python 3.10, 3.11, and 3.12. It also runs small `si
 5. Which gene knockout causes extinction first?
 6. Which concrete symbolic chains cover the missing functions?
 7. Do high-scoring symbolic chains actually survive in Level 1 simulation?
+8. Which chain + environment niches survive best?
