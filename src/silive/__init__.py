@@ -24,6 +24,17 @@ from .chemistry import (
     validate_environment,
     write_chain_search_csv,
 )
+from .environment_sweep import (
+    ENVIRONMENT_SWEEP_ORDER,
+    EnvironmentSweepPaths,
+    EnvironmentSweepResult,
+    environment_sweep_payload,
+    environment_sweep_row,
+    environment_sweep_rows,
+    format_environment_ranking,
+    run_environment_sweep,
+    write_environment_sweep_outputs,
+)
 from .model import ALL_GENES, PAIR_STABILITY, ProtoLife, SimulationConfig, compare_gene_sets, simulate
 from .plot import PhaseGrid, make_phase_grid, plot_phase_map, read_phase_map
 from .study import RepairStudyResult, build_delta_rows, run_repair_study, summarize_repair_effect
@@ -70,4 +81,13 @@ __all__ = [
     "format_chain_report",
     "write_chain_report_outputs",
     "create_chain_report",
+    "ENVIRONMENT_SWEEP_ORDER",
+    "EnvironmentSweepPaths",
+    "EnvironmentSweepResult",
+    "environment_sweep_row",
+    "environment_sweep_rows",
+    "environment_sweep_payload",
+    "run_environment_sweep",
+    "write_environment_sweep_outputs",
+    "format_environment_ranking",
 ]
