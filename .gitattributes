@@ -1,0 +1,33 @@
+* text=auto
+
+# Source and project text files use LF in the repository and working tree.
+*.py text eol=lf
+*.pyi text eol=lf
+*.toml text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.csv text eol=lf
+*.tsv text eol=lf
+*.json text eol=lf
+*.smi text eol=lf
+*.sh text eol=lf
+
+# Windows scripts keep CRLF if they are added later.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary artifacts should never be line-ending normalized.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.xlsx binary
+*.pptx binary
+*.docx binary
