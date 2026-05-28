@@ -67,7 +67,7 @@ The scorecard also shows missing functions and a rough viability class such as `
 
 ## Symbolic environments
 
-`evaluate-chain`, `search-chain`, `chain-simulate`, and `chain-report` can apply simplified environmental modifiers:
+`evaluate-chain`, `search-chain`, `chain-simulate`, `chain-report`, and `environment-sweep` can apply simplified environmental modifiers:
 
 ```bash
 silive evaluate-chain "Si-O-Si-O-Fe-O-Si" --environment hydrothermal
@@ -146,6 +146,38 @@ outputs/chain_report/simulation_summary.csv
 ```
 
 The report includes chain properties, predicted functions, missing functions, viability class, replacement recommendations, and simulation results.
+
+## Sweep environments
+
+`silive environment-sweep` evaluates and simulates one chain across every supported environment plus the unmodified `none` baseline. It writes CSV/JSON outputs and prints a ranking by `viability_score`, `survival_rate`, `code_preservation_rate`, and final population.
+
+```bash
+silive environment-sweep "Si-O-Si-O-Fe-O-Si" \
+  --generations 100 \
+  --runs 30 \
+  --seed 42 \
+  --output-dir outputs/env_sweep
+```
+
+Outputs:
+
+```text
+outputs/env_sweep/environment_sweep.csv
+outputs/env_sweep/environment_sweep.json
+```
+
+The sweep covers:
+
+```text
+none
+hydrothermal
+dry_hot
+acidic
+alkaline
+cold
+```
+
+The CSV includes symbolic properties, function scores, predicted/missing functions, viability class, viability score, survival rate, code preservation rate, and final population for each environment.
 
 ## Install
 
@@ -291,7 +323,7 @@ pytest
 
 ## Continuous integration
 
-GitHub Actions runs tests on Python 3.10, 3.11, and 3.12. It also runs small `silive evaluate-chain`, `silive search-chain`, `silive chain-simulate`, `silive chain-report`, `silive lab`, and `silive repair-study` smoke tests and uploads the generated outputs as workflow artifacts.
+GitHub Actions runs tests on Python 3.10, 3.11, and 3.12. It also runs small `silive evaluate-chain`, `silive search-chain`, `silive chain-simulate`, `silive chain-report`, `silive environment-sweep`, `silive lab`, and `silive repair-study` smoke tests and uploads the generated outputs as workflow artifacts.
 
 ## What to test first
 
