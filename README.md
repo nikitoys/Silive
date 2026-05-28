@@ -45,6 +45,12 @@ python -m venv .venv
 pip install -e .[dev]
 ```
 
+For plotting only:
+
+```bash
+pip install -e .[plot]
+```
+
 ## Run one simulation
 
 ```bash
@@ -97,6 +103,45 @@ CSV columns:
 | `avg_final_stability` | average final pair stability |
 | `avg_best_fitness` | average best fitness at the end |
 | `zone` | rough classification: `dead`, `unstable`, `drifting`, `proto_life`, or `stable_life` |
+
+## Plot a phase map
+
+```bash
+silive plot phase_map.csv \
+  --metric survival_rate \
+  --output survival_rate.png
+```
+
+Supported metrics:
+
+```text
+survival_rate
+code_preservation_rate
+avg_final_population
+avg_final_stability
+avg_best_fitness
+```
+
+## Run the visual lab
+
+`silive lab` runs a sweep and creates default heatmaps in one command.
+
+```bash
+silive lab \
+  --mutation-steps 16 \
+  --shell-steps 16 \
+  --runs 30 \
+  --generations 100 \
+  --output-dir outputs
+```
+
+Outputs:
+
+```text
+outputs/phase_map.csv
+outputs/survival_rate.png
+outputs/code_preservation_rate.png
+```
 
 ## Run tests
 
