@@ -67,7 +67,7 @@ The scorecard also shows missing functions and a rough viability class such as `
 
 ## Symbolic environments
 
-`evaluate-chain`, `search-chain`, and `chain-simulate` can apply simplified environmental modifiers:
+`evaluate-chain`, `search-chain`, `chain-simulate`, and `chain-report` can apply simplified environmental modifiers:
 
 ```bash
 silive evaluate-chain "Si-O-Si-O-Fe-O-Si" --environment hydrothermal
@@ -122,6 +122,30 @@ Output metrics:
 | `avg_final_population` | average population at the final generation |
 | `avg_final_stability` | average final Level 1 sequence stability |
 | `avg_best_fitness` | average best final fitness |
+
+## Generate a chain report
+
+`silive chain-report` creates a small report package for one concrete chain. It evaluates the chain, runs the Level 1 bridge simulation, and writes machine-readable plus human-readable outputs.
+
+```bash
+silive chain-report "Si-O-Si-O-Fe-O-Si" \
+  --environment hydrothermal \
+  --generations 100 \
+  --runs 30 \
+  --seed 42 \
+  --output-dir outputs/chain_report
+```
+
+Outputs:
+
+```text
+outputs/chain_report/chain_score.json
+outputs/chain_report/chain_score.csv
+outputs/chain_report/chain_report.txt
+outputs/chain_report/simulation_summary.csv
+```
+
+The report includes chain properties, predicted functions, missing functions, viability class, replacement recommendations, and simulation results.
 
 ## Install
 
@@ -267,7 +291,7 @@ pytest
 
 ## Continuous integration
 
-GitHub Actions runs tests on Python 3.10, 3.11, and 3.12. It also runs small `silive evaluate-chain`, `silive search-chain`, `silive chain-simulate`, `silive lab`, and `silive repair-study` smoke tests and uploads the generated outputs as workflow artifacts.
+GitHub Actions runs tests on Python 3.10, 3.11, and 3.12. It also runs small `silive evaluate-chain`, `silive search-chain`, `silive chain-simulate`, `silive chain-report`, `silive lab`, and `silive repair-study` smoke tests and uploads the generated outputs as workflow artifacts.
 
 ## What to test first
 
