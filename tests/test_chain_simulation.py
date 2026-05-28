@@ -17,6 +17,19 @@ def test_simulate_chain_uses_predicted_functions() -> None:
     assert result.generations == 5
 
 
+def test_simulate_chain_passes_environment_to_evaluation() -> None:
+    result = simulate_chain(
+        "Si-O-Si-O-Fe-O-Si",
+        environment="hydrothermal",
+        generations=5,
+        runs=2,
+        seed=42,
+    )
+
+    assert result.evaluation.environment == "hydrothermal"
+    assert result.genes == tuple(sorted(result.evaluation.predicted_functions))
+
+
 def test_simulate_chain_returns_aggregate_metrics() -> None:
     result = simulate_chain(
         "Si-O-Si-O-Fe-O-Si",
@@ -43,6 +56,7 @@ def test_simulate_chain_rejects_invalid_runs_and_generations() -> None:
 def test_format_chain_simulation_contains_bridge_fields() -> None:
     result = simulate_chain(
         "Si-O-Si-O-Fe-O-Si",
+        environment="hydrothermal",
         generations=5,
         runs=2,
         seed=42,
@@ -50,6 +64,7 @@ def test_format_chain_simulation_contains_bridge_fields() -> None:
     text = format_chain_simulation(result)
 
     assert "chain: Si-O-Si-O-Fe-O-Si" in text
+    assert "environment: hydrothermal" in text
     assert "predicted functions:" in text
     assert "missing functions:" in text
     assert "simulation:" in text
