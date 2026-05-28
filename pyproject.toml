@@ -26,7 +26,7 @@ chem = [
 ]
 
 [project.scripts]
-silive = "silive.cli:main"
+silive = "silive.cli_with_rdkit:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
