@@ -14,6 +14,11 @@ from .chemistry import (
     search_chains,
     write_chain_search_csv,
 )
+from .environment_sweep import (
+    format_environment_ranking,
+    run_environment_sweep,
+    write_environment_sweep_outputs,
+)
 from .model import ALL_GENES, SimulationConfig, compare_gene_sets, simulate
 from .plot import SUPPORTED_METRICS, plot_phase_map, write_multiple_plots
 from .study import run_repair_study, write_repair_study_outputs
@@ -223,6 +228,25 @@ def run_chain_report_command(args: argparse.Namespace) -> None:
     print(f"wrote simulation_summary_csv to {paths.simulation_summary_csv}")
 
 
+def run_environment_sweep_command(args: argparse.Namespace) -> None:
+    sweep = run_environment_sweep(
+        args.chain,
+        generations=args.generations,
+        runs=args.runs,
+        seed=args.seed,
+        start_sequence=args.sequence,
+        population_limit=args.population_limit,
+        start_population=args.start_population,
+        base_mutation_rate=args.mutation_rate,
+        gene_mutation_rate=args.gene_mutation_rate,
+        shell_survival_bonus=args.shell_bonus,
+    )
+    paths = write_environment_sweep_outputs(sweep, args.output_dir)
+    print(format_environment_ranking(sweep))
+    print(f"\nwrote environment_sweep_csv to {paths.environment_sweep_csv}")
+    print(f"wrote environment_sweep_json to {paths.environment_sweep_json}")
+
+
 def _add_sweep_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--mutation-start", type=float, default=0.0)
     parser.add_argument("--mutation-stop", type=float, default=0.30)
@@ -349,6 +373,15 @@ def build_parser() -> argparse.ArgumentParser:
     _add_environment_argument(chain_report_parser)
     _add_chain_simulation_arguments(chain_report_parser)
     chain_report_parser.set_defaults(func=run_chain_report_command)
+
+    environment_sweep_parser = subparsers.add_parser(
+        "environment-sweep",
+        help="evaluate and simulate one symbolic chain across all environments",
+    )
+    environment_sweep_parser.add_argument("chain", help="element chain such as Si-O-Si-O-Fe-O-Si")
+    environment_sweep_parser.add_argument("--output-dir", default="outputs/env_sweep")
+    _add_chain_simulation_arguments(environment_sweep_parser)
+    environment_sweep_parser.set_defaults(func=run_environment_sweep_command)
 
     return parser
 
