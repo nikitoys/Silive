@@ -4,6 +4,7 @@ import argparse
 from itertools import combinations
 from pathlib import Path
 
+from .chain_report import create_chain_report
 from .chain_simulation import format_chain_simulation, simulate_chain
 from .chemistry import (
     SUPPORTED_ENVIRONMENTS,
@@ -201,6 +202,27 @@ def run_chain_simulate_command(args: argparse.Namespace) -> None:
     print(format_chain_simulation(result))
 
 
+def run_chain_report_command(args: argparse.Namespace) -> None:
+    _, paths = create_chain_report(
+        args.chain,
+        output_dir=args.output_dir,
+        environment=args.environment,
+        generations=args.generations,
+        runs=args.runs,
+        seed=args.seed,
+        start_sequence=args.sequence,
+        population_limit=args.population_limit,
+        start_population=args.start_population,
+        base_mutation_rate=args.mutation_rate,
+        gene_mutation_rate=args.gene_mutation_rate,
+        shell_survival_bonus=args.shell_bonus,
+    )
+    print(f"wrote chain_score_json to {paths.chain_score_json}")
+    print(f"wrote chain_score_csv to {paths.chain_score_csv}")
+    print(f"wrote chain_report_txt to {paths.chain_report_txt}")
+    print(f"wrote simulation_summary_csv to {paths.simulation_summary_csv}")
+
+
 def _add_sweep_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--mutation-start", type=float, default=0.0)
     parser.add_argument("--mutation-stop", type=float, default=0.30)
@@ -225,6 +247,18 @@ def _add_environment_argument(parser: argparse.ArgumentParser) -> None:
         default=None,
         help="symbolic environment modifier",
     )
+
+
+def _add_chain_simulation_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--generations", type=int, default=100)
+    parser.add_argument("--runs", type=int, default=20)
+    parser.add_argument("--seed", type=int, default=None)
+    parser.add_argument("--sequence", default="ABABAB")
+    parser.add_argument("--population-limit", type=int, default=100)
+    parser.add_argument("--start-population", type=int, default=10)
+    parser.add_argument("--mutation-rate", type=float, default=0.08)
+    parser.add_argument("--gene-mutation-rate", type=float, default=0.03)
+    parser.add_argument("--shell-bonus", type=float, default=0.15)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -303,16 +337,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
     chain_simulate_parser.add_argument("chain", help="element chain such as Si-O-Si-O-Fe-O-Si")
     _add_environment_argument(chain_simulate_parser)
-    chain_simulate_parser.add_argument("--generations", type=int, default=100)
-    chain_simulate_parser.add_argument("--runs", type=int, default=20)
-    chain_simulate_parser.add_argument("--seed", type=int, default=None)
-    chain_simulate_parser.add_argument("--sequence", default="ABABAB")
-    chain_simulate_parser.add_argument("--population-limit", type=int, default=100)
-    chain_simulate_parser.add_argument("--start-population", type=int, default=10)
-    chain_simulate_parser.add_argument("--mutation-rate", type=float, default=0.08)
-    chain_simulate_parser.add_argument("--gene-mutation-rate", type=float, default=0.03)
-    chain_simulate_parser.add_argument("--shell-bonus", type=float, default=0.15)
+    _add_chain_simulation_arguments(chain_simulate_parser)
     chain_simulate_parser.set_defaults(func=run_chain_simulate_command)
+
+    chain_report_parser = subparsers.add_parser(
+        "chain-report",
+        help="write JSON/CSV/TXT report for one symbolic chain",
+    )
+    chain_report_parser.add_argument("chain", help="element chain such as Si-O-Si-O-Fe-O-Si")
+    chain_report_parser.add_argument("--output-dir", default="outputs/chain_report")
+    _add_environment_argument(chain_report_parser)
+    _add_chain_simulation_arguments(chain_report_parser)
+    chain_report_parser.set_defaults(func=run_chain_report_command)
 
     return parser
 
