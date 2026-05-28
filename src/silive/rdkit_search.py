@@ -7,6 +7,7 @@ from pathlib import Path
 from .proto_genes import ProtoGeneHit, detect_proto_genes
 from .proto_genome import ProtoGenomeEvaluation, evaluate_proto_genome
 from .rdkit_chemistry import RDKitEvaluation, evaluate_rdkit_molecule
+from .symbolic_graph import SymbolicGraph, build_symbolic_graph
 
 CRITICAL_FUNCTIONS = ("TEMPLATE", "CATALYZE", "PROTECT")
 
@@ -16,6 +17,7 @@ class RDKitCandidate:
     name: str
     molecule: str
     rdkit_evaluation: RDKitEvaluation
+    symbolic_graph: SymbolicGraph
     gene_hits: list[ProtoGeneHit]
     genome_evaluation: ProtoGenomeEvaluation
     candidate_score: float
@@ -92,6 +94,7 @@ def classify_viability(candidate_score: float, genome_evaluation: ProtoGenomeEva
 
 def evaluate_candidate(molecule: str, name: str) -> RDKitCandidate:
     rdkit_evaluation = evaluate_rdkit_molecule(molecule)
+    symbolic_graph = build_symbolic_graph(rdkit_evaluation)
     gene_hits = detect_proto_genes(rdkit_evaluation)
     genome_evaluation = evaluate_proto_genome(gene_hits, rdkit_evaluation)
     candidate_score = score_candidate(rdkit_evaluation, gene_hits, genome_evaluation)
@@ -99,6 +102,7 @@ def evaluate_candidate(molecule: str, name: str) -> RDKitCandidate:
         name=name,
         molecule=molecule,
         rdkit_evaluation=rdkit_evaluation,
+        symbolic_graph=symbolic_graph,
         gene_hits=gene_hits,
         genome_evaluation=genome_evaluation,
         candidate_score=candidate_score,
@@ -122,6 +126,10 @@ def _detected_genes(candidate: RDKitCandidate) -> list[str]:
     return [hit.gene_id for hit in candidate.gene_hits if hit.present]
 
 
+def _prop(candidate: RDKitCandidate, key: str) -> str:
+    return f"{candidate.symbolic_graph.graph_properties.get(key, 0.0):.3f}"
+
+
 def candidate_rows(candidates: list[RDKitCandidate]) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
     for rank, candidate in enumerate(candidates, start=1):
@@ -136,6 +144,12 @@ def candidate_rows(candidates: list[RDKitCandidate]) -> list[dict[str, str]]:
                 "missing_functions": _join(candidate.genome_evaluation.missing_functions),
                 "detected_genes": _join(_detected_genes(candidate)),
                 "symbolic_chain": "-".join(candidate.rdkit_evaluation.symbolic_chain),
+                "topology_tags": _join(candidate.symbolic_graph.topology_tags),
+                "backbone_length": _prop(candidate, "backbone_length"),
+                "ring_count": _prop(candidate, "ring_count"),
+                "fragment_count": _prop(candidate, "fragment_count"),
+                "network_score": _prop(candidate, "network_score"),
+                "branching_score": _prop(candidate, "branching_score"),
                 "viability": candidate.viability,
             }
         )
@@ -156,6 +170,12 @@ def write_rdkit_search_csv(candidates: list[RDKitCandidate], output: str | Path)
         "missing_functions",
         "detected_genes",
         "symbolic_chain",
+        "topology_tags",
+        "backbone_length",
+        "ring_count",
+        "fragment_count",
+        "network_score",
+        "branching_score",
         "viability",
     ]
     with path.open("w", encoding="utf-8", newline="") as handle:
@@ -167,9 +187,9 @@ def write_rdkit_search_csv(candidates: list[RDKitCandidate], output: str | Path)
 def format_rdkit_search_table(candidates: list[RDKitCandidate]) -> str:
     rows = candidate_rows(candidates)
     if not rows:
-        return "rank name score validity covered missing genes chain viability"
+        return "rank name score validity covered missing genes topology viability"
 
-    header = "rank | name | score | valid | covered | missing | genes | symbolic_chain | viability"
+    header = "rank | name | score | valid | covered | missing | genes | topology | viability"
     separator = "--- | --- | ---: | --- | --- | --- | --- | --- | ---"
     lines = [header, separator]
     for row in rows:
@@ -183,7 +203,7 @@ def format_rdkit_search_table(candidates: list[RDKitCandidate]) -> str:
                     row["covered_functions"] or "none",
                     row["missing_functions"] or "none",
                     row["detected_genes"] or "none",
-                    row["symbolic_chain"] or "none",
+                    row["topology_tags"] or "none",
                     row["viability"],
                 ]
             )
