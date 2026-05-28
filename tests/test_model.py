@@ -1,4 +1,12 @@
-from silive.model import ProtoLife, SimulationConfig, compare_gene_sets, simulate
+from silive.model import (
+    CAT_WEAK_PAIR_BONUS,
+    NO_SEP_SEPARATION_CHANCE,
+    SHELL_SURVIVAL_BONUS,
+    ProtoLife,
+    SimulationConfig,
+    compare_gene_sets,
+    simulate,
+)
 
 
 def test_ab_pair_is_more_stable_than_ad_pair() -> None:
@@ -7,18 +15,35 @@ def test_ab_pair_is_more_stable_than_ad_pair() -> None:
     assert organism.pair_stability("A", "B") > organism.pair_stability("A", "D")
 
 
-def test_shell_increases_survival_chance() -> None:
-    bare = ProtoLife(sequence="ABABAB", genes=set())
-    shelled = ProtoLife(sequence="ABABAB", genes={"SHELL"})
+def test_shell_adds_survival_bonus_without_overpowering() -> None:
+    bare = ProtoLife(sequence="ADADAD", genes=set())
+    shelled = ProtoLife(sequence="ADADAD", genes={"SHELL"})
 
-    assert shelled.survival_chance() >= bare.survival_chance()
+    assert shelled.survival_chance() == bare.survival_chance() + SHELL_SURVIVAL_BONUS
+    assert shelled.survival_chance() < bare.survival_chance() * 2
 
 
-def test_pol_increases_copy_probability() -> None:
+def test_cat_only_slightly_stabilizes_weak_pairs() -> None:
+    raw = ProtoLife(sequence="AD", genes=set())
+    catalyzed = ProtoLife(sequence="AD", genes={"CAT"})
+
+    assert catalyzed.pair_stability("A", "D") == raw.pair_stability("A", "D") + CAT_WEAK_PAIR_BONUS
+
+
+def test_sep_is_critical_for_separation() -> None:
+    no_sep = ProtoLife(sequence="ABABAB", genes=set())
+    with_sep = ProtoLife(sequence="ABABAB", genes={"SEP"})
+
+    assert no_sep.separation_chance() == NO_SEP_SEPARATION_CHANCE
+    assert with_sep.separation_chance() > no_sep.separation_chance() * 10
+
+
+def test_pol_increases_copy_probability_but_has_energy_cost() -> None:
     slow = ProtoLife(sequence="ABABAB", genes=set())
     fast = ProtoLife(sequence="ABABAB", genes={"POL"})
 
     assert fast.copy_probability() > slow.copy_probability()
+    assert fast.copy_energy_cost() > slow.copy_energy_cost()
 
 
 def test_repair_lowers_mutation_rate() -> None:
