@@ -77,6 +77,22 @@ jobs:
             echo "RDKit search unavailable as expected in base CI"
           fi
 
+      - name: Run reaction simulate smoke test without optional dependency
+        run: |
+          if silive rdkit-reaction-simulate "[Si]O[Si]O[Fe]O[Si]" --top 3; then
+            echo "Reaction simulator available"
+          else
+            echo "Reaction simulator unavailable as expected in base CI"
+          fi
+
+      - name: Run reaction search smoke test without optional dependency
+        run: |
+          if silive rdkit-reaction-search examples/rdkit_candidates.smi --output outputs/reaction_search.csv --top 5; then
+            echo "Reaction search available"
+          else
+            echo "Reaction search unavailable as expected in base CI"
+          fi
+
       - name: Run environment chemistry smoke test
         run: silive evaluate-chain "Si-O-Si-O-Fe-O-Si" --environment hydrothermal
 
