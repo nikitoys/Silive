@@ -37,6 +37,9 @@ jobs:
       - name: Run symbolic chemistry smoke test
         run: silive evaluate-chain "Si-O-Si-O-Fe-O-Si"
 
+      - name: Run environment chemistry smoke test
+        run: silive evaluate-chain "Si-O-Si-O-Fe-O-Si" --environment hydrothermal
+
       - name: Run quick chain search smoke test
         run: |
           silive search-chain \
@@ -44,11 +47,13 @@ jobs:
             --rounds 20 \
             --top 5 \
             --random-seed 42 \
+            --environment hydrothermal \
             --output outputs/chain_search.csv
 
       - name: Run quick chain simulation smoke test
         run: |
           silive chain-simulate "Si-O-Si-O-Fe-O-Si" \
+            --environment hydrothermal \
             --generations 5 \
             --runs 2 \
             --seed 42
