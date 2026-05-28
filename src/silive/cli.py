@@ -4,6 +4,7 @@ import argparse
 from itertools import combinations
 from pathlib import Path
 
+from .chain_simulation import format_chain_simulation, simulate_chain
 from .chemistry import (
     evaluate_chain,
     format_scorecard,
@@ -181,6 +182,22 @@ def run_search_chain_command(args: argparse.Namespace) -> None:
     print(f"\nwrote {len(results)} candidates to {args.output}")
 
 
+def run_chain_simulate_command(args: argparse.Namespace) -> None:
+    result = simulate_chain(
+        args.chain,
+        generations=args.generations,
+        runs=args.runs,
+        seed=args.seed,
+        start_sequence=args.sequence,
+        population_limit=args.population_limit,
+        start_population=args.start_population,
+        base_mutation_rate=args.mutation_rate,
+        gene_mutation_rate=args.gene_mutation_rate,
+        shell_survival_bonus=args.shell_bonus,
+    )
+    print(format_chain_simulation(result))
+
+
 def _add_sweep_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--mutation-start", type=float, default=0.0)
     parser.add_argument("--mutation-stop", type=float, default=0.30)
@@ -265,6 +282,22 @@ def build_parser() -> argparse.ArgumentParser:
     search_chain_parser.add_argument("--max-length", type=int, default=16)
     search_chain_parser.add_argument("--output", default="chain_search.csv")
     search_chain_parser.set_defaults(func=run_search_chain_command)
+
+    chain_simulate_parser = subparsers.add_parser(
+        "chain-simulate",
+        help="evaluate a symbolic chain and simulate its predicted proto-life functions",
+    )
+    chain_simulate_parser.add_argument("chain", help="element chain such as Si-O-Si-O-Fe-O-Si")
+    chain_simulate_parser.add_argument("--generations", type=int, default=100)
+    chain_simulate_parser.add_argument("--runs", type=int, default=20)
+    chain_simulate_parser.add_argument("--seed", type=int, default=None)
+    chain_simulate_parser.add_argument("--sequence", default="ABABAB")
+    chain_simulate_parser.add_argument("--population-limit", type=int, default=100)
+    chain_simulate_parser.add_argument("--start-population", type=int, default=10)
+    chain_simulate_parser.add_argument("--mutation-rate", type=float, default=0.08)
+    chain_simulate_parser.add_argument("--gene-mutation-rate", type=float, default=0.03)
+    chain_simulate_parser.add_argument("--shell-bonus", type=float, default=0.15)
+    chain_simulate_parser.set_defaults(func=run_chain_simulate_command)
 
     return parser
 
