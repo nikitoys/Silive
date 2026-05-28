@@ -20,6 +20,7 @@ from .environment_sweep import (
     write_environment_sweep_outputs,
 )
 from .model import ALL_GENES, SimulationConfig, compare_gene_sets, simulate
+from .niche_search import format_niche_ranking, run_niche_search, write_niche_search_outputs
 from .plot import SUPPORTED_METRICS, plot_phase_map, write_multiple_plots
 from .study import run_repair_study, write_repair_study_outputs
 from .sweep import SweepConfig, linspace, run_sweep, write_csv
@@ -247,6 +248,28 @@ def run_environment_sweep_command(args: argparse.Namespace) -> None:
     print(f"wrote environment_sweep_json to {paths.environment_sweep_json}")
 
 
+def run_niche_search_command(args: argparse.Namespace) -> None:
+    search = run_niche_search(
+        args.seed_chain,
+        rounds=args.rounds,
+        top_n=args.top,
+        seed=args.seed,
+        max_length=args.max_length,
+        generations=args.generations,
+        runs=args.runs,
+        start_sequence=args.sequence,
+        population_limit=args.population_limit,
+        start_population=args.start_population,
+        base_mutation_rate=args.mutation_rate,
+        gene_mutation_rate=args.gene_mutation_rate,
+        shell_survival_bonus=args.shell_bonus,
+    )
+    paths = write_niche_search_outputs(search, args.output_dir)
+    print(format_niche_ranking(search))
+    print(f"\nwrote niche_search_csv to {paths.niche_search_csv}")
+    print(f"wrote niche_search_json to {paths.niche_search_json}")
+
+
 def _add_sweep_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--mutation-start", type=float, default=0.0)
     parser.add_argument("--mutation-stop", type=float, default=0.30)
@@ -382,6 +405,18 @@ def build_parser() -> argparse.ArgumentParser:
     environment_sweep_parser.add_argument("--output-dir", default="outputs/env_sweep")
     _add_chain_simulation_arguments(environment_sweep_parser)
     environment_sweep_parser.set_defaults(func=run_environment_sweep_command)
+
+    niche_search_parser = subparsers.add_parser(
+        "niche-search",
+        help="search best chain + environment niches",
+    )
+    niche_search_parser.add_argument("--seed", dest="seed_chain", required=True, help="seed chain such as Si-O-Si-O-Fe-O-Si")
+    niche_search_parser.add_argument("--output-dir", default="outputs/niche_search")
+    niche_search_parser.add_argument("--rounds", type=int, default=100)
+    niche_search_parser.add_argument("--top", type=int, default=10)
+    niche_search_parser.add_argument("--max-length", type=int, default=16)
+    _add_chain_simulation_arguments(niche_search_parser)
+    niche_search_parser.set_defaults(func=run_niche_search_command)
 
     return parser
 
