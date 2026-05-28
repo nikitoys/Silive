@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Sequence
 
-from .model import DEFAULT_SHELL_SURVIVAL_BONUS, TARGET_SEQUENCE, SimulationConfig, simulate
+from .model import TARGET_SEQUENCE, SimulationConfig, simulate
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,5 +144,4 @@ def default_sweep_config() -> SweepConfig:
         mutation_rates=linspace(0.0, 0.30, 16),
         shell_bonuses=linspace(0.0, 0.40, 16),
         genes=frozenset({"POL", "SEP", "SHELL", "REPAIR"}),
-        shell_bonuses_default=DEFAULT_SHELL_SURVIVAL_BONUS,
     )
