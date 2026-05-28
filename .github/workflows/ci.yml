@@ -67,6 +67,14 @@ jobs:
             --seed 42 \
             --output-dir outputs/chain_report
 
+      - name: Run quick environment sweep smoke test
+        run: |
+          silive environment-sweep "Si-O-Si-O-Fe-O-Si" \
+            --generations 5 \
+            --runs 2 \
+            --seed 42 \
+            --output-dir outputs/env_sweep
+
       - name: Run quick visual lab smoke test
         run: |
           silive lab \
