@@ -1,5 +1,7 @@
 # Silive
 
+![CI](https://github.com/nikitoys/Silive/actions/workflows/ci.yml/badge.svg)
+
 **Silive** is a small Python sandbox for testing a Level 1 chemical-logical model of silicon-like proto-life.
 
 The model is intentionally simple: it does not simulate atoms directly. Instead, it treats a proto-organism as a symbolic sequence plus a set of functional genes that modify probabilities.
@@ -148,6 +150,10 @@ outputs/code_preservation_rate.png
 ```bash
 pytest
 ```
+
+## Continuous integration
+
+GitHub Actions runs tests on Python 3.10, 3.11, and 3.12. It also runs a small `silive lab` smoke test and uploads the generated CSV/PNG outputs as workflow artifacts.
 
 ## What to test first
 
