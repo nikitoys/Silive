@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import csv
+import random
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Iterable
 
 from .model import ALL_GENES
 
 CHEMICAL_ALPHABET = frozenset({"Si", "O", "C", "Fe", "Mg", "Al", "H", "S", "P", "N", "Ni"})
+MUTATION_ELEMENTS = ("Si", "O", "C", "Fe", "Mg", "Al", "H", "S", "P", "N", "Ni")
 
 PROPERTY_NAMES = ("stability", "template", "catalysis", "repair", "separation")
 
@@ -55,6 +59,13 @@ FUNCTION_THRESHOLDS = {
 
 REQUIRED_FUNCTIONS = ("POL", "SEP", "SHELL")
 LONG_TERM_FUNCTIONS = ("REPAIR",)
+VIABILITY_BONUS = {
+    "weak_candidate": 0.0,
+    "stable_inert_candidate": 0.8,
+    "incomplete_proto_life_candidate": 1.4,
+    "proto_life_candidate": 2.2,
+    "stable_proto_life_candidate": 3.0,
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,6 +77,14 @@ class ChainEvaluation:
     missing_functions: tuple[str, ...]
     viability: str
     recommendations: tuple[str, ...]
+    viability_score: float
+
+
+@dataclass(frozen=True, slots=True)
+class ChainSearchResult:
+    evaluation: ChainEvaluation
+    source_chain: tuple[str, ...]
+    mutation_count: int
 
 
 def parse_chain(chain: str | Iterable[str]) -> tuple[str, ...]:
@@ -141,6 +160,20 @@ def classify_viability(functions: tuple[str, ...], function_scores: dict[str, fl
     return "weak_candidate"
 
 
+def calculate_viability_score(
+    properties: dict[str, float],
+    function_scores: dict[str, float],
+    functions: tuple[str, ...],
+    viability: str,
+) -> float:
+    required_score = sum(function_scores[name] for name in REQUIRED_FUNCTIONS) / len(REQUIRED_FUNCTIONS)
+    long_term_score = function_scores["REPAIR"] * 0.35 + function_scores["CAT"] * 0.20
+    property_balance = min(properties.values()) * 0.50
+    function_bonus = len(functions) * 0.12
+    score = required_score + long_term_score + property_balance + function_bonus + VIABILITY_BONUS[viability]
+    return round(score, 3)
+
+
 def build_recommendations(missing_functions: tuple[str, ...]) -> tuple[str, ...]:
     recommendations = []
     if "POL" in missing_functions:
@@ -164,6 +197,7 @@ def evaluate_chain(chain: str | Iterable[str]) -> ChainEvaluation:
     missing = tuple(function for function in (*REQUIRED_FUNCTIONS, *LONG_TERM_FUNCTIONS) if function not in functions)
     viability = classify_viability(functions, function_scores)
     recommendations = build_recommendations(missing)
+    viability_score = calculate_viability_score(properties, function_scores, functions, viability)
 
     return ChainEvaluation(
         chain=parsed,
@@ -173,7 +207,140 @@ def evaluate_chain(chain: str | Iterable[str]) -> ChainEvaluation:
         missing_functions=missing,
         viability=viability,
         recommendations=recommendations,
+        viability_score=viability_score,
     )
+
+
+def mutate_chain(
+    chain: tuple[str, ...],
+    rng: random.Random,
+    *,
+    elements: tuple[str, ...] = MUTATION_ELEMENTS,
+    max_length: int = 16,
+) -> tuple[str, ...]:
+    operation = rng.choice(("replace", "insert", "delete"))
+    mutated = list(chain)
+
+    if operation == "replace" or len(mutated) <= 2:
+        index = rng.randrange(len(mutated))
+        choices = [element for element in elements if element != mutated[index]]
+        mutated[index] = rng.choice(choices)
+    elif operation == "insert" and len(mutated) < max_length:
+        index = rng.randrange(len(mutated) + 1)
+        mutated.insert(index, rng.choice(elements))
+    else:
+        index = rng.randrange(len(mutated))
+        del mutated[index]
+
+    if len(mutated) < 2:
+        return chain
+    return tuple(mutated)
+
+
+def search_chains(
+    seed_chain: str | Iterable[str],
+    *,
+    rounds: int = 500,
+    top_n: int = 10,
+    seed: int | None = None,
+    max_length: int = 16,
+) -> list[ChainSearchResult]:
+    if rounds <= 0:
+        raise ValueError("rounds must be positive")
+    if top_n <= 0:
+        raise ValueError("top_n must be positive")
+
+    rng = random.Random(seed)
+    source = parse_chain(seed_chain)
+    seen: set[tuple[str, ...]] = set()
+    candidates: list[ChainSearchResult] = []
+    current = source
+
+    for mutation_count in range(rounds + 1):
+        if current not in seen:
+            seen.add(current)
+            candidates.append(
+                ChainSearchResult(
+                    evaluation=evaluate_chain(current),
+                    source_chain=source,
+                    mutation_count=mutation_count,
+                )
+            )
+        current = mutate_chain(current, rng, max_length=max_length)
+
+    candidates.sort(
+        key=lambda result: (
+            result.evaluation.viability_score,
+            len(result.evaluation.predicted_functions),
+            result.evaluation.properties["stability"],
+        ),
+        reverse=True,
+    )
+    return candidates[:top_n]
+
+
+def write_chain_search_csv(results: list[ChainSearchResult], output_path: str | Path) -> None:
+    path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = [
+        "rank",
+        "chain",
+        "viability_score",
+        "viability",
+        "predicted_functions",
+        "missing_functions",
+        "stability",
+        "template",
+        "catalysis",
+        "repair",
+        "separation",
+        "POL",
+        "SEP",
+        "SHELL",
+        "REPAIR",
+        "CAT",
+        "mutation_count",
+    ]
+
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        for rank, result in enumerate(results, start=1):
+            evaluation = result.evaluation
+            writer.writerow(
+                {
+                    "rank": rank,
+                    "chain": "-".join(evaluation.chain),
+                    "viability_score": evaluation.viability_score,
+                    "viability": evaluation.viability,
+                    "predicted_functions": "+".join(evaluation.predicted_functions),
+                    "missing_functions": "+".join(evaluation.missing_functions),
+                    "stability": evaluation.properties["stability"],
+                    "template": evaluation.properties["template"],
+                    "catalysis": evaluation.properties["catalysis"],
+                    "repair": evaluation.properties["repair"],
+                    "separation": evaluation.properties["separation"],
+                    "POL": evaluation.function_scores["POL"],
+                    "SEP": evaluation.function_scores["SEP"],
+                    "SHELL": evaluation.function_scores["SHELL"],
+                    "REPAIR": evaluation.function_scores["REPAIR"],
+                    "CAT": evaluation.function_scores["CAT"],
+                    "mutation_count": result.mutation_count,
+                }
+            )
+
+
+def format_search_results(results: list[ChainSearchResult]) -> str:
+    lines = ["rank | score | viability | functions | chain"]
+    lines.append("--- | ---: | --- | --- | ---")
+    for rank, result in enumerate(results, start=1):
+        evaluation = result.evaluation
+        functions = "+".join(evaluation.predicted_functions) if evaluation.predicted_functions else "none"
+        lines.append(
+            f"{rank} | {evaluation.viability_score:.3f} | {evaluation.viability} | "
+            f"{functions} | {'-'.join(evaluation.chain)}"
+        )
+    return "\n".join(lines)
 
 
 def format_scorecard(evaluation: ChainEvaluation) -> str:
@@ -196,6 +363,7 @@ def format_scorecard(evaluation: ChainEvaluation) -> str:
         "predicted functions: " + (" + ".join(evaluation.predicted_functions) if evaluation.predicted_functions else "none"),
         "missing functions: " + (", ".join(evaluation.missing_functions) if evaluation.missing_functions else "none"),
         f"viability: {evaluation.viability}",
+        f"viability score: {evaluation.viability_score:.3f}",
     ])
 
     if evaluation.recommendations:
