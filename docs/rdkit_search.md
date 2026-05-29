@@ -35,7 +35,8 @@ For every candidate, Silive runs:
 2. `build_symbolic_graph`;
 3. `detect_proto_genes`;
 4. `evaluate_proto_genome`;
-5. `candidate_score` ranking.
+5. separate `rdkit_valid_score` and `symbolic_viability_score` tracking;
+6. `candidate_score` ranking.
 
 ## Candidate score
 
@@ -58,6 +59,8 @@ Columns:
 | `name` | candidate name |
 | `molecule` | original SMILES/SMARTS |
 | `score` | final candidate score |
+| `rdkit_valid_score` | RDKit validity as a numeric score, separate from symbolic viability |
+| `symbolic_viability_score` | RDKit-independent symbolic motif/topology score |
 | `molecular_validity` | RDKit parse validity |
 | `covered_functions` | minimal proto-genome functions covered |
 | `missing_functions` | missing minimal functions |
@@ -70,5 +73,10 @@ Columns:
 | `network_score` | heuristic network density score |
 | `branching_score` | fraction of high-degree branch nodes |
 | `viability` | rough viability class |
+| `risk_flags` | explicit risk markers such as `rdkit_invalid`, `symbolic_only`, and `requires_chemical_validation` |
+| `preservation_reason` | why the candidate is retained, including symbolic-only retention for invalid RDKit candidates |
+
+
+Invalid RDKit candidates with useful symbolic motifs are retained as `symbolic_only_invalid_candidate` when their symbolic viability score clears the preservation threshold. They keep `score=0.000` and `rdkit_valid_score=0.000`, but `risk_flags` and `preservation_reason` make the chemical validation risk explicit.
 
 This search is a heuristic screen, not a claim of real chemical viability.

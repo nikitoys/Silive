@@ -2,11 +2,21 @@ from __future__ import annotations
 
 from collections import defaultdict, deque
 from dataclasses import dataclass
+import json
+from pathlib import Path
+from typing import Any
 
 from .rdkit_chemistry import RDKitEvaluation, format_rdkit_scorecard
 
 BACKBONE_ELEMENTS = {"Si", "O", "P", "Fe", "Ni"}
 METAL_ELEMENTS = {"Fe", "Ni"}
+BRIDGE_COUNT_KEYS = (
+    "siloxane_bridge_count",
+    "metal_oxide_bridge_count",
+    "phosphate_bridge_count",
+    "labile_bridge_candidate_count",
+)
+GRAPH_DIFF_PROPERTY_KEYS = ("backbone_length", "fragment_count")
 
 
 @dataclass(frozen=True, slots=True)
@@ -18,6 +28,16 @@ class SymbolicNode:
     is_aromatic: bool
     tags: tuple[str, ...]
 
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "index": self.index,
+            "element": self.element,
+            "degree": self.degree,
+            "formal_charge": self.formal_charge,
+            "is_aromatic": self.is_aromatic,
+            "tags": list(self.tags),
+        }
+
 
 @dataclass(frozen=True, slots=True)
 class SymbolicEdge:
@@ -28,6 +48,16 @@ class SymbolicEdge:
     bond_type: str
     tags: tuple[str, ...]
 
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "begin": self.begin,
+            "end": self.end,
+            "begin_element": self.begin_element,
+            "end_element": self.end_element,
+            "bond_type": self.bond_type,
+            "tags": list(self.tags),
+        }
+
 
 @dataclass(frozen=True, slots=True)
 class SymbolicFragment:
@@ -35,6 +65,14 @@ class SymbolicFragment:
     atom_indices: tuple[int, ...]
     elements: tuple[str, ...]
     is_main_fragment: bool
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "fragment_id": self.fragment_id,
+            "atom_indices": list(self.atom_indices),
+            "elements": list(self.elements),
+            "is_main_fragment": self.is_main_fragment,
+        }
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,6 +85,22 @@ class SymbolicGraph:
     main_backbone: tuple[int, ...]
     topology_tags: tuple[str, ...]
     graph_properties: dict[str, float]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": 1,
+            "nodes": [node.to_dict() for node in self.nodes],
+            "edges": [edge.to_dict() for edge in self.edges],
+            "rings": [list(ring) for ring in self.rings],
+            "fragments": [fragment.to_dict() for fragment in self.fragments],
+            "motifs": dict(sorted(self.motifs.items())),
+            "main_backbone": list(self.main_backbone),
+            "topology_tags": list(self.topology_tags),
+            "graph_properties": dict(sorted(self.graph_properties.items())),
+        }
+
+    def to_json(self, *, indent: int | None = 2) -> str:
+        return json.dumps(self.to_dict(), indent=indent, sort_keys=True)
 
 
 def _node_tags(element: str, degree: int, formal_charge: int, is_aromatic: bool) -> tuple[str, ...]:
@@ -292,6 +346,127 @@ def build_symbolic_graph(evaluation: RDKitEvaluation) -> SymbolicGraph:
         topology_tags=_topology_tags(nodes, edges, evaluation.rings, fragments, properties),
         graph_properties=properties,
     )
+
+
+def symbolic_graph_to_dict(graph: SymbolicGraph) -> dict[str, Any]:
+    return graph.to_dict()
+
+
+def symbolic_graph_to_json(graph: SymbolicGraph, *, indent: int | None = 2) -> str:
+    return graph.to_json(indent=indent)
+
+
+def write_symbolic_graph_json(graph: SymbolicGraph, output: str | Path, *, indent: int | None = 2) -> None:
+    path = Path(output)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(symbolic_graph_to_json(graph, indent=indent) + "\n", encoding="utf-8")
+
+
+def _numeric_delta(parent_value: float, child_value: float) -> dict[str, float]:
+    return {
+        "parent": parent_value,
+        "child": child_value,
+        "delta": round(child_value - parent_value, 3),
+    }
+
+
+def _count_delta(parent_value: int, child_value: int) -> dict[str, int]:
+    return {
+        "parent": parent_value,
+        "child": child_value,
+        "delta": child_value - parent_value,
+    }
+
+
+def _fragment_signatures(graph: SymbolicGraph) -> list[str]:
+    return sorted("-".join(fragment.elements) for fragment in graph.fragments)
+
+
+def diff_symbolic_graphs(parent: SymbolicGraph, child: SymbolicGraph) -> dict[str, Any]:
+    parent_tags = set(parent.topology_tags)
+    child_tags = set(child.topology_tags)
+    parent_fragments = set(_fragment_signatures(parent))
+    child_fragments = set(_fragment_signatures(child))
+    motif_keys = sorted(set(parent.motifs) | set(child.motifs))
+
+    motif_counts = {
+        key: _count_delta(parent.motifs.get(key, 0), child.motifs.get(key, 0))
+        for key in motif_keys
+        if parent.motifs.get(key, 0) != child.motifs.get(key, 0)
+    }
+
+    return {
+        "schema_version": 1,
+        "topology_tags": {
+            "added": sorted(child_tags - parent_tags),
+            "removed": sorted(parent_tags - child_tags),
+            "unchanged": sorted(parent_tags & child_tags),
+        },
+        "bridge_counts": {
+            key: _numeric_delta(
+                parent.graph_properties.get(key, 0.0),
+                child.graph_properties.get(key, 0.0),
+            )
+            for key in BRIDGE_COUNT_KEYS
+        },
+        "properties": {
+            key: _numeric_delta(
+                parent.graph_properties.get(key, 0.0),
+                child.graph_properties.get(key, 0.0),
+            )
+            for key in GRAPH_DIFF_PROPERTY_KEYS
+        },
+        "fragments": {
+            "signatures_added": sorted(child_fragments - parent_fragments),
+            "signatures_removed": sorted(parent_fragments - child_fragments),
+            "signatures_unchanged": sorted(parent_fragments & child_fragments),
+        },
+        "motif_counts": motif_counts,
+    }
+
+
+def symbolic_graph_diff_to_json(diff: dict[str, Any], *, indent: int | None = 2) -> str:
+    return json.dumps(diff, indent=indent, sort_keys=True)
+
+
+def write_symbolic_graph_diff_json(diff: dict[str, Any], output: str | Path, *, indent: int | None = 2) -> None:
+    path = Path(output)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(symbolic_graph_diff_to_json(diff, indent=indent) + "\n", encoding="utf-8")
+
+
+def format_symbolic_graph_diff(diff: dict[str, Any]) -> str:
+    lines = ["symbolic graph diff", "", "topology tags:"]
+    tag_diff = diff["topology_tags"]
+    for label in ("added", "removed", "unchanged"):
+        values = tag_diff[label]
+        lines.append(f"  {label}: {', '.join(values) if values else 'none'}")
+
+    lines.extend(["", "bridge counts:"])
+    for key, values in diff["bridge_counts"].items():
+        lines.append(
+            f"  {key}: parent={values['parent']:.3f}; child={values['child']:.3f}; delta={values['delta']:.3f}"
+        )
+
+    lines.extend(["", "properties:"])
+    for key, values in diff["properties"].items():
+        lines.append(
+            f"  {key}: parent={values['parent']:.3f}; child={values['child']:.3f}; delta={values['delta']:.3f}"
+        )
+
+    lines.extend(["", "fragments:"])
+    fragment_diff = diff["fragments"]
+    for label in ("signatures_added", "signatures_removed", "signatures_unchanged"):
+        values = fragment_diff[label]
+        lines.append(f"  {label}: {', '.join(values) if values else 'none'}")
+
+    lines.extend(["", "motif counts:"])
+    if diff["motif_counts"]:
+        for key, values in diff["motif_counts"].items():
+            lines.append(f"  {key}: parent={values['parent']}; child={values['child']}; delta={values['delta']}")
+    else:
+        lines.append("  none")
+    return "\n".join(lines)
 
 
 def format_symbolic_graph_summary(graph: SymbolicGraph) -> str:

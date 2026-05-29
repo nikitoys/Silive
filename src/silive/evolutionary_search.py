@@ -3,11 +3,17 @@ from __future__ import annotations
 import csv
 import json
 import random
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 
 from .rdkit_search import evaluate_candidate, parse_candidate_file
 from .reaction_simulator import simulate_reactions
+from .symbolic_genome import (
+    SymbolicGenome,
+    mutate_symbolic_genome,
+    symbolic_genome_from_molecule,
+    symbolic_genome_to_molecule,
+)
 
 DEFAULT_START_CANDIDATES = (
     "[Si]O[Si]",
@@ -49,12 +55,16 @@ class EvolutionCandidate:
     mutations: tuple[str, ...]
     applied_reactions: tuple[str, ...]
     candidate_score: float
+    rdkit_valid_score: float
+    symbolic_viability_score: float
     genome_score: float
     covered_functions: tuple[str, ...]
     missing_functions: tuple[str, ...]
     detected_genes: tuple[str, ...]
     topology_tags: tuple[str, ...]
     viability: str
+    risk_flags: tuple[str, ...]
+    preservation_reason: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,6 +76,28 @@ class EvolutionRun:
     summary: dict[str, object]
 
 
+EVOLUTION_CSV_FIELDNAMES = [
+    "candidate_id",
+    "parent_id",
+    "generation",
+    "molecule",
+    "symbolic_description",
+    "mutations",
+    "applied_reactions",
+    "candidate_score",
+    "rdkit_valid_score",
+    "symbolic_viability_score",
+    "genome_score",
+    "covered_functions",
+    "missing_functions",
+    "detected_genes",
+    "topology_tags",
+    "viability",
+    "risk_flags",
+    "preservation_reason",
+]
+
+
 def load_start_candidates(path: str | Path | None) -> tuple[str, ...]:
     if path is None:
         return DEFAULT_START_CANDIDATES
@@ -73,34 +105,14 @@ def load_start_candidates(path: str | Path | None) -> tuple[str, ...]:
     return tuple(molecule for molecule, _name in parsed) or DEFAULT_START_CANDIDATES
 
 
-def _append_before_last_si(molecule: str, fragment: str) -> str:
-    if molecule.endswith("[Si]"):
-        return molecule[:-4] + fragment + "[Si]"
-    return molecule + fragment
+def mutate_genome(genome: SymbolicGenome, rng: random.Random) -> tuple[SymbolicGenome, str]:
+    return mutate_symbolic_genome(genome, rng, MUTATION_OPERATORS)
 
 
 def mutate_molecule(molecule: str, rng: random.Random) -> tuple[str, str]:
-    operator = rng.choice(MUTATION_OPERATORS)
-    if operator == "add_si_o_unit":
-        return molecule + "O[Si]", operator
-    if operator == "add_fe_o_center":
-        return molecule + "O[Fe]", operator
-    if operator == "add_ni_o_center":
-        return molecule + "O[Ni]", operator
-    if operator == "add_p_o_bridge":
-        return _append_before_last_si(molecule, "OP(=O)(O)O"), operator
-    if operator == "close_si_o_ring_symbolically":
-        return "[Si]1O[Si]O1", operator
-    if operator == "split_labile_bridge":
-        return molecule + ".[Si]O", operator
-    if operator == "duplicate_si_o_segment":
-        return molecule.replace("[Si]O[Si]", "[Si]O[Si]O[Si]", 1) if "[Si]O[Si]" in molecule else molecule + "O[Si]"
-    if operator == "remove_weak_terminal_group":
-        for suffix in ("O[Fe]", "O[Ni]", "O[Si]", ".[Si]O"):
-            if molecule.endswith(suffix) and len(molecule) > len(suffix):
-                return molecule[: -len(suffix)], operator
-        return molecule, operator
-    return molecule, operator
+    genome = symbolic_genome_from_molecule(molecule)
+    mutated_genome, operator = mutate_genome(genome, rng)
+    return symbolic_genome_to_molecule(mutated_genome), operator
 
 
 def _genes(candidate) -> tuple[str, ...]:
@@ -110,8 +122,9 @@ def _genes(candidate) -> tuple[str, ...]:
 def _symbolic_description(candidate, extra: str = "") -> str:
     chain = "-".join(candidate.rdkit_evaluation.symbolic_chain) or "invalid"
     tags = ",".join(candidate.symbolic_graph.topology_tags) or "no_topology"
+    genome = symbolic_genome_from_molecule(candidate.molecule).describe()
     suffix = f" | {extra}" if extra else ""
-    return f"chain={chain} | topology={tags}{suffix}"
+    return f"chain={chain} | topology={tags} | genome={genome}{suffix}"
 
 
 def _candidate_from_molecule(
@@ -134,12 +147,16 @@ def _candidate_from_molecule(
         mutations=mutations,
         applied_reactions=applied_reactions,
         candidate_score=evaluated.candidate_score,
+        rdkit_valid_score=evaluated.rdkit_valid_score,
+        symbolic_viability_score=evaluated.symbolic_viability_score,
         genome_score=evaluated.genome_evaluation.genome_score,
         covered_functions=evaluated.genome_evaluation.covered_functions,
         missing_functions=evaluated.genome_evaluation.missing_functions,
         detected_genes=_genes(evaluated),
         topology_tags=evaluated.symbolic_graph.topology_tags,
         viability=evaluated.viability,
+        risk_flags=evaluated.risk_flags,
+        preservation_reason=evaluated.preservation_reason,
     )
 
 
@@ -159,17 +176,25 @@ def _reaction_variant(parent: EvolutionCandidate, generation: int, index: int) -
         mutations=parent.mutations,
         applied_reactions=(*parent.applied_reactions, best.reaction_id),
         candidate_score=round(max(0.0, min(1.0, parent.candidate_score + best.delta_score * 0.5)), 3),
+        rdkit_valid_score=parent.rdkit_valid_score,
+        symbolic_viability_score=parent.symbolic_viability_score,
         genome_score=round(max(0.0, min(1.0, parent.genome_score + best.delta_score)), 3),
         covered_functions=tuple(sorted(set(parent.covered_functions) | set(best.new_functions))),
         missing_functions=tuple(function for function in parent.missing_functions if function not in set(best.new_functions)),
         detected_genes=parent.detected_genes,
         topology_tags=parent.topology_tags,
         viability="symbolic_reaction_candidate",
+        risk_flags=parent.risk_flags,
+        preservation_reason=parent.preservation_reason,
     )
 
 
 def _sort_population(population: list[EvolutionCandidate]) -> list[EvolutionCandidate]:
-    return sorted(population, key=lambda item: (item.candidate_score, item.genome_score), reverse=True)
+    return sorted(
+        population,
+        key=lambda item: (item.candidate_score, item.symbolic_viability_score, item.genome_score),
+        reverse=True,
+    )
 
 
 def run_evolution(config: EvolutionConfig) -> EvolutionRun:
@@ -236,7 +261,11 @@ def run_evolution(config: EvolutionConfig) -> EvolutionRun:
         "best_candidate_id": best.candidate_id,
         "best_candidate_score": best.candidate_score,
         "best_genome_score": best.genome_score,
+        "best_rdkit_valid_score": best.rdkit_valid_score,
+        "best_symbolic_viability_score": best.symbolic_viability_score,
         "best_viability": best.viability,
+        "best_risk_flags": list(best.risk_flags),
+        "best_preservation_reason": best.preservation_reason,
         "best_molecule": best.molecule,
     }
     return EvolutionRun(config=config, history=history, final_population=final_population, best_candidate=best, summary=summary)
@@ -252,12 +281,16 @@ def _candidate_row(candidate: EvolutionCandidate) -> dict[str, str]:
         "mutations": ";".join(candidate.mutations),
         "applied_reactions": ";".join(candidate.applied_reactions),
         "candidate_score": f"{candidate.candidate_score:.3f}",
+        "rdkit_valid_score": f"{candidate.rdkit_valid_score:.3f}",
+        "symbolic_viability_score": f"{candidate.symbolic_viability_score:.3f}",
         "genome_score": f"{candidate.genome_score:.3f}",
         "covered_functions": ";".join(candidate.covered_functions),
         "missing_functions": ";".join(candidate.missing_functions),
         "detected_genes": ";".join(candidate.detected_genes),
         "topology_tags": ";".join(candidate.topology_tags),
         "viability": candidate.viability,
+        "risk_flags": ";".join(candidate.risk_flags),
+        "preservation_reason": candidate.preservation_reason,
     }
 
 
@@ -265,7 +298,7 @@ def write_candidates_csv(candidates: list[EvolutionCandidate], path: str | Path)
     output = Path(path)
     output.parent.mkdir(parents=True, exist_ok=True)
     rows = [_candidate_row(candidate) for candidate in candidates]
-    fieldnames = list(rows[0].keys()) if rows else list(_candidate_row(EvolutionCandidate('', None, '', '', 0, tuple(), tuple(), 0, 0, tuple(), tuple(), tuple(), tuple(), '')).keys())
+    fieldnames = EVOLUTION_CSV_FIELDNAMES
     with output.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
@@ -288,8 +321,12 @@ def format_best_candidate(candidate: EvolutionCandidate) -> str:
             f"molecule: {candidate.molecule}",
             f"symbolic_description: {candidate.symbolic_description}",
             f"candidate_score: {candidate.candidate_score:.3f}",
+            f"rdkit_valid_score: {candidate.rdkit_valid_score:.3f}",
+            f"symbolic_viability_score: {candidate.symbolic_viability_score:.3f}",
             f"genome_score: {candidate.genome_score:.3f}",
             f"viability: {candidate.viability}",
+            f"risk_flags: {', '.join(candidate.risk_flags) or 'none'}",
+            f"preservation_reason: {candidate.preservation_reason}",
             f"detected_genes: {', '.join(candidate.detected_genes) or 'none'}",
             f"covered_functions: {', '.join(candidate.covered_functions) or 'none'}",
             f"missing_functions: {', '.join(candidate.missing_functions) or 'none'}",
@@ -322,9 +359,13 @@ def format_evolution_summary(run: EvolutionRun) -> str:
             f"best_candidate: {best.candidate_id}",
             f"best_score: {best.candidate_score:.3f}",
             f"best_genome_score: {best.genome_score:.3f}",
+            f"best_rdkit_valid_score: {best.rdkit_valid_score:.3f}",
+            f"best_symbolic_viability_score: {best.symbolic_viability_score:.3f}",
             f"best_molecule: {best.molecule}",
             f"covered_functions: {', '.join(best.covered_functions) or 'none'}",
             f"missing_functions: {', '.join(best.missing_functions) or 'none'}",
             f"viability: {best.viability}",
+            f"risk_flags: {', '.join(best.risk_flags) or 'none'}",
+            f"preservation_reason: {best.preservation_reason}",
         ]
     )

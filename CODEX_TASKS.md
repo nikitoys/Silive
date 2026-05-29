@@ -9,17 +9,17 @@ Use this table as the main progress tracker. Keep the detailed priority sections
 | Priority | Work item | Status | Next concrete step |
 | --- | --- | --- | --- |
 | P0 | Stabilize line endings with `.gitattributes` | Done | Already committed and pushed. |
-| P1 | Verify current code health | Done | Keep running `pytest` before each commit; current baseline is `63 passed, 30 skipped` without RDKit. |
+| P1 | Verify current code health | Done | Keep running `pytest` before each commit; current baseline is `74 passed, 30 skipped` without RDKit. |
 | P2 | Retire CLI wrapper chain | Done | Push commit `ac1a11b` if it is not on `origin/main` yet. |
 | P3.1 | Replace brute-force symbolic backbone search | Done | Push commit `599871b` if it is not on `origin/main` yet. |
 | P3.2 | Add explicit symbolic bridge classification | Done | Keep bridge tags/properties covered by `tests/test_symbolic_graph_core.py`. |
-| P3.3 | Add symbolic graph JSON serialization | Next | Add `to_dict`/JSON helpers, expose JSON through CLI or report output, and test without RDKit where possible. |
-| P3.4 | Add graph diff between parent and mutated candidates | Not started | Define a compact diff format for topology tags, bridge counts, backbone length, fragments, and motif counts. |
-| P4.1 | Introduce symbolic genome/motif object independent from SMILES | Not started | Define the data model and adapt evolutionary mutation operators to use it. |
-| P4.2 | Track `rdkit_valid_score` and `symbolic_viability_score` separately | Not started | Add fields to candidates and evolution CSV/JSON outputs. |
-| P4.3 | Preserve useful invalid symbolic candidates | Not started | Keep invalid RDKit candidates when symbolically useful, but mark validity and risks clearly. |
-| P5.1 | Add hypothesis/report layer | Not started | Create `src/silive/hypothesis_layer.py` and `silive hypothesis-report`. |
-| P5.2 | Summarize motifs, bottlenecks, missing functions, and topology classes | Not started | Read search/evolution outputs and write a linked Markdown report. |
+| P3.3 | Add symbolic graph JSON serialization | Done | Keep `SymbolicGraph.to_dict()`/JSON helpers and `rdkit-graph-evaluate --json-output` covered by tests/docs. |
+| P3.4 | Add graph diff between parent and mutated candidates | Done | Keep compact diff output covered for topology tags, bridge counts, backbone length, fragments, and motif counts. |
+| P4.1 | Introduce symbolic genome/motif object independent from SMILES | Done | Keep `SymbolicGenome` parsing/rendering and mutation delegation covered without RDKit. |
+| P4.2 | Track `rdkit_valid_score` and `symbolic_viability_score` separately | Done | Keep separate RDKit validity and symbolic viability fields in candidate/evolution outputs. |
+| P4.3 | Preserve useful invalid symbolic candidates | Done | Keep symbolic-only invalid candidates marked with risk flags and preservation reasons. |
+| P5.1 | Add hypothesis/report layer | Done | Keep `src/silive/hypothesis_layer.py` and `silive hypothesis-report` covered by tests/docs. |
+| P5.2 | Summarize motifs, bottlenecks, missing functions, and topology classes | Done | Keep motif, bottleneck, topology, material, environment, and source-row sections in the Markdown report. |
 
 ## First checks
 
@@ -88,8 +88,8 @@ Possible improvements:
    - metal oxide bridge;
    - phosphate bridge;
    - labile bridge candidate.
-3. Add graph serialization to JSON.
-4. Add graph diff between parent and mutated candidate.
+3. Add graph serialization to JSON. Status: done.
+4. Add graph diff between parent and mutated candidate. Status: done.
 
 ## Priority 4: improve evolutionary search
 
@@ -97,12 +97,12 @@ Current evolution mutates SMILES-like strings and sometimes creates unrealistic 
 
 Better next version:
 
-1. Maintain a symbolic genome/motif object independent from SMILES.
+1. Maintain a symbolic genome/motif object independent from SMILES. Status: done.
 2. Generate RDKit strings only when possible.
 3. Track both:
    - `rdkit_valid_score`;
-   - `symbolic_viability_score`.
-4. Keep invalid symbolic candidates if they are useful for abstract search, but mark them clearly.
+   - `symbolic_viability_score`. Status: done.
+4. Keep invalid symbolic candidates if they are useful for abstract search, but mark them clearly. Status: done.
 
 ## Priority 5: add hypothesis/report layer
 
@@ -126,7 +126,9 @@ Inputs:
 - `outputs/evolution/best_candidate.txt`;
 - `outputs/evolution/summary.json`.
 
-Output should include:
+Status: done.
+
+Output includes:
 
 - top motif families;
 - recurring bottlenecks;
