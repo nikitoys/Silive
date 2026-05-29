@@ -19,6 +19,7 @@ from .environment_sweep import (
     run_environment_sweep,
     write_environment_sweep_outputs,
 )
+from .hypothesis_layer import default_hypothesis_inputs, write_hypothesis_report
 from .model import ALL_GENES, SimulationConfig, compare_gene_sets, simulate
 from .niche_search import format_niche_ranking, run_niche_search, write_niche_search_outputs
 from .plot import SUPPORTED_METRICS, plot_phase_map, write_multiple_plots
@@ -29,7 +30,7 @@ from .proto_gene_lineage import (
     format_proto_gene_summary,
     run_and_write_proto_gene_lineage_search,
 )
-from .rdkit_chemistry import RDKitUnavailableError, evaluate_rdkit_molecule, format_rdkit_scorecard
+from .rdkit_chemistry import RDKitEvaluation, RDKitUnavailableError, evaluate_rdkit_molecule, format_rdkit_scorecard
 from .rdkit_cli import run_rdkit_evaluate_text
 from .rdkit_search import format_rdkit_search_table, search_rdkit_candidates, write_rdkit_search_csv
 from .reaction_simulator import (
@@ -48,7 +49,14 @@ from .evolutionary_search import (
     write_evolution_outputs,
 )
 from .sweep import SweepConfig, linspace, run_sweep, write_csv
-from .symbolic_graph import build_symbolic_graph, format_symbolic_graph_summary
+from .symbolic_graph import (
+    build_symbolic_graph,
+    diff_symbolic_graphs,
+    format_symbolic_graph_diff,
+    format_symbolic_graph_summary,
+    write_symbolic_graph_diff_json,
+    write_symbolic_graph_json,
+)
 
 
 def _print_generation(record: dict) -> None:
@@ -322,8 +330,7 @@ def run_rdkit_genome_evaluate_command(args: argparse.Namespace) -> None:
     print(run_rdkit_genome_evaluate_text(args.molecule))
 
 
-def run_rdkit_graph_evaluate_text(molecule: str) -> str:
-    evaluation = _load_rdkit_evaluation(molecule)
+def _format_rdkit_graph_evaluation(evaluation: RDKitEvaluation) -> str:
     graph = build_symbolic_graph(evaluation)
     gene_hits = detect_proto_genes(evaluation)
     genome = evaluate_proto_genome(gene_hits, evaluation)
@@ -338,8 +345,37 @@ def run_rdkit_graph_evaluate_text(molecule: str) -> str:
     )
 
 
+def run_rdkit_graph_evaluate_text(molecule: str) -> str:
+    return _format_rdkit_graph_evaluation(_load_rdkit_evaluation(molecule))
+
+
 def run_rdkit_graph_evaluate_command(args: argparse.Namespace) -> None:
-    print(run_rdkit_graph_evaluate_text(args.molecule))
+    evaluation = _load_rdkit_evaluation(args.molecule)
+    graph = build_symbolic_graph(evaluation)
+    json_output = getattr(args, "json_output", None)
+    if json_output:
+        write_symbolic_graph_json(graph, json_output)
+    print(_format_rdkit_graph_evaluation(evaluation))
+    if json_output:
+        print(f"\nwrote symbolic graph JSON to {json_output}")
+
+
+def run_rdkit_graph_diff_text(parent_molecule: str, child_molecule: str) -> str:
+    parent_graph = build_symbolic_graph(_load_rdkit_evaluation(parent_molecule))
+    child_graph = build_symbolic_graph(_load_rdkit_evaluation(child_molecule))
+    return format_symbolic_graph_diff(diff_symbolic_graphs(parent_graph, child_graph))
+
+
+def run_rdkit_graph_diff_command(args: argparse.Namespace) -> None:
+    parent_graph = build_symbolic_graph(_load_rdkit_evaluation(args.parent_molecule))
+    child_graph = build_symbolic_graph(_load_rdkit_evaluation(args.child_molecule))
+    diff = diff_symbolic_graphs(parent_graph, child_graph)
+    json_output = getattr(args, "json_output", None)
+    if json_output:
+        write_symbolic_graph_diff_json(diff, json_output)
+    print(format_symbolic_graph_diff(diff))
+    if json_output:
+        print(f"\nwrote symbolic graph diff JSON to {json_output}")
 
 
 def run_rdkit_search_command(args: argparse.Namespace) -> str:
@@ -399,6 +435,18 @@ def run_evolve_command(args: argparse.Namespace) -> str:
 def run_evolve_cli_command(args: argparse.Namespace) -> None:
     print(run_evolve_command(args))
 
+
+
+
+def run_hypothesis_report_command(args: argparse.Namespace) -> None:
+    inputs = default_hypothesis_inputs(
+        args.evolution_dir,
+        args.output,
+        rdkit_search_csv=args.rdkit_search_csv,
+        reaction_search_csv=args.reaction_search_csv,
+    )
+    write_hypothesis_report(inputs)
+    print(f"wrote hypothesis report to {inputs.output}")
 
 def run_proto_gene_search_command(args: argparse.Namespace) -> None:
     config = ProtoGeneLineageConfig(
@@ -597,7 +645,25 @@ def build_parser() -> argparse.ArgumentParser:
         help="evaluate RDKit molecule, symbolic graph, proto-genes, and proto-genome",
     )
     _add_rdkit_molecule_argument(rdkit_graph_parser)
+    rdkit_graph_parser.add_argument(
+        "--json-output",
+        default=None,
+        help="optional path for machine-readable symbolic graph JSON",
+    )
     rdkit_graph_parser.set_defaults(func=run_rdkit_graph_evaluate_command)
+
+    rdkit_graph_diff_parser = subparsers.add_parser(
+        "rdkit-graph-diff",
+        help="compare symbolic graph properties between parent and mutated RDKit molecules",
+    )
+    rdkit_graph_diff_parser.add_argument("parent_molecule", help="parent SMILES/SMARTS candidate")
+    rdkit_graph_diff_parser.add_argument("child_molecule", help="mutated child SMILES/SMARTS candidate")
+    rdkit_graph_diff_parser.add_argument(
+        "--json-output",
+        default=None,
+        help="optional path for machine-readable symbolic graph diff JSON",
+    )
+    rdkit_graph_diff_parser.set_defaults(func=run_rdkit_graph_diff_command)
 
     rdkit_search_parser = subparsers.add_parser("rdkit-search", help="rank RDKit SMILES/SMARTS candidates from a file")
     rdkit_search_parser.add_argument("input", help=".smi/.txt file with one SMILES/SMARTS candidate per line")
@@ -649,6 +715,16 @@ def build_parser() -> argparse.ArgumentParser:
     proto_gene_parser.add_argument("--retention-threshold", type=float, default=0.60)
     _add_environment_argument(proto_gene_parser)
     proto_gene_parser.set_defaults(func=run_proto_gene_search_command)
+
+    hypothesis_parser = subparsers.add_parser(
+        "hypothesis-report",
+        help="write a Markdown hypothesis report from RDKit/evolution outputs",
+    )
+    hypothesis_parser.add_argument("evolution_dir", help="directory containing final_population.csv and summary.json")
+    hypothesis_parser.add_argument("--output", default="outputs/hypotheses.md")
+    hypothesis_parser.add_argument("--rdkit-search-csv", default=None, help="optional rdkit_search.csv path")
+    hypothesis_parser.add_argument("--reaction-search-csv", default=None, help="optional reaction_search.csv path")
+    hypothesis_parser.set_defaults(func=run_hypothesis_report_command)
 
     return parser
 

@@ -7,9 +7,11 @@ Run:
 ```bash
 pip install -e .[chem]
 silive rdkit-graph-evaluate "[Si]O[Si]O[Fe]OP(=O)(O)O[Si]"
+silive rdkit-graph-evaluate "[Si]O[Si]O[Fe]OP(=O)(O)O[Si]" --json-output outputs/symbolic_graph.json
+silive rdkit-graph-diff "[Si]O[Si]" "[Si]O[Fe]OP(=O)(O)O[Si]" --json-output outputs/symbolic_graph_diff.json
 ```
 
-The command prints:
+The command prints a human-readable report, and `--json-output` also writes the symbolic graph in a machine-readable JSON schema. The command prints:
 
 1. the RDKit scorecard;
 2. symbolic graph summary;
@@ -31,6 +33,11 @@ The command prints:
 - `main_backbone`: diameter-like Si/O/P/Fe/Ni path on the main fragment;
 - `topology_tags`: coarse topology labels;
 - `graph_properties`: numerical graph descriptors.
+
+
+## JSON serialization
+
+Every graph object exposes `to_dict()` and `to_json()` helpers, with module-level `symbolic_graph_to_dict()`, `symbolic_graph_to_json()`, and `write_symbolic_graph_json()` wrappers for callers that prefer functions. The JSON payload includes `schema_version: 1`, nodes, edges, rings, fragments, motif counts, the main backbone, topology tags, and graph properties. Tuples are emitted as JSON arrays so downstream tools can consume the output directly.
 
 ## Topology tags
 
@@ -64,6 +71,11 @@ Possible tags:
 | `branching_score` | fraction of high-degree branch nodes |
 | `network_score` | heuristic network density score |
 | `backbone_length` | diameter-like Si/O/P/Fe/Ni backbone path length |
+
+
+## Graph diff
+
+`rdkit-graph-diff` compares a parent candidate with a mutated child candidate. The compact diff reports added/removed/unchanged topology tags, deltas for bridge counts, backbone length, fragment count, fragment-signature changes, and changed motif counts. Use `--json-output` to save the same diff payload as JSON for evolutionary search reports or downstream analysis.
 
 ## Integration
 

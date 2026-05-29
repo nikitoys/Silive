@@ -23,11 +23,16 @@ The input file is optional. Without it, Silive starts from a small default set o
 For each generation:
 
 1. keep the top elite candidates;
-2. mutate motif strings with symbolic operators;
+2. parse candidates into `SymbolicGenome` objects and mutate those symbolic motifs;
 3. optionally apply the best abstract reaction opportunity;
 4. evaluate via RDKit candidate search/proto-genome scoring;
 5. sort by `candidate_score` and `genome_score`;
 6. save history.
+
+
+## Symbolic genome model
+
+Evolutionary mutations now operate on a small RDKit-independent `SymbolicGenome` data model before rendering a best-effort molecule string for RDKit evaluation. A symbolic genome stores element fragments, counted motifs (`Si-O-Si`, `Fe-O`, `Ni-O`, `P-O`), and topology hints such as `fragmented`, `metal_center`, `phosphate_bridge`, `siloxane_template`, and `si_o_ring`. This keeps mutation logic focused on motif/topology changes instead of direct string splicing, while still allowing RDKit strings to be generated when possible.
 
 ## Mutation operators
 
@@ -53,7 +58,7 @@ The command writes:
 | `best_candidate.txt` | readable best-candidate report |
 | `summary.json` | run metadata and best score |
 
-`best_candidate.txt` includes molecule/symbolic description, scores, detected genes, covered/missing functions, topology tags, applied reactions/mutations, and interpretation.
+`evolution_history.csv`, `final_population.csv`, `summary.json`, and `best_candidate.txt` track `rdkit_valid_score` separately from `symbolic_viability_score`, so chemical parser validity and symbolic motif usefulness can be inspected independently. Invalid RDKit candidates that are still symbolically useful are retained with `symbolic_only_invalid_candidate` viability plus explicit `risk_flags` and `preservation_reason` fields. `best_candidate.txt` includes molecule/symbolic description, scores, detected genes, covered/missing functions, topology tags, applied reactions/mutations, and interpretation.
 
 ## Scope
 
