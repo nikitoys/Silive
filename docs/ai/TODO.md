@@ -11,6 +11,7 @@
 - Decide whether optional RDKit compatibility should be continuously tested in CI.
 - Add a compact command matrix for common CLI smoke tests.
 - Review whether generated report/output schemas should be documented as stable or experimental.
+- Calibrate proto-gene evidence thresholds and null-enrichment cutoffs against a larger expected-behavior corpus.
 
 ## Larger Refactoring
 

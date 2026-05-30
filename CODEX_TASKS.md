@@ -26,6 +26,7 @@ Use this file as the live project board for Codex sessions. Keep it short and cu
 
 ## Done
 
+- Added proto-gene evidence framework with corpus expectations, null controls, ablation summaries, CLI, docs, and report outputs.
 - Stabilized repository line endings with `.gitattributes`.
 - Retired old CLI wrapper indirection; `silive.cli:main` is the stable entrypoint.
 - Added symbolic graph bridge classification, JSON serialization, and graph diff.

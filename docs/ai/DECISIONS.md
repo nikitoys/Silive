@@ -56,3 +56,18 @@ ADR-style log for durable project/process decisions.
 - Consequences:
   - New sessions can bootstrap MCP setup faster.
   - MCP workflow changes must update the script, `README.md`, and `docs/ai/MCP.md` together.
+
+## ADR-004: Proto-gene Evidence Is Model-local
+
+- Date: 2026-05-30
+- Status: accepted
+- Context:
+  - The project needs a stronger scientific layer for checking whether current proto-gene motifs are reproducible inside Silive.
+  - The evidence layer must not imply wet-lab validation or real proto-life proof.
+- Decision:
+  - Add a versioned proto-gene evidence workflow with expected-behavior corpus checks, null controls, ablation summaries, and reproducible outputs.
+  - Treat evidence grades as computational/model-local labels.
+  - Keep the safety boundary explicit: no synthesis protocols or lab parameters.
+- Consequences:
+  - Future scoring/evidence changes should update `MODEL_VERSION` when output interpretation changes.
+  - Evidence thresholds need calibration against larger corpora before treating grades as stable.

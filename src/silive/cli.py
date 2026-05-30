@@ -30,6 +30,11 @@ from .proto_gene_lineage import (
     format_proto_gene_summary,
     run_and_write_proto_gene_lineage_search,
 )
+from .proto_gene_evidence import (
+    FEATURE_GROUPS,
+    run_proto_gene_evidence,
+    write_proto_gene_evidence_outputs,
+)
 from .rdkit_chemistry import RDKitEvaluation, RDKitUnavailableError, evaluate_rdkit_molecule, format_rdkit_scorecard
 from .rdkit_cli import run_rdkit_evaluate_text
 from .rdkit_search import format_rdkit_search_table, search_rdkit_candidates, write_rdkit_search_csv
@@ -474,6 +479,38 @@ def run_proto_gene_search_command(args: argparse.Namespace) -> None:
     print(f"wrote proto_gene_report_md to {paths.proto_gene_report_md}")
 
 
+def run_proto_gene_evidence_command(args: argparse.Namespace) -> None:
+    disabled_features = tuple(
+        feature
+        for feature, enabled in {
+            "template": args.disable_template,
+            "catalysis": args.disable_catalysis,
+            "repair": args.disable_repair,
+            "protection": args.disable_protection,
+            "separation": args.disable_separation,
+        }.items()
+        if enabled
+    ) or FEATURE_GROUPS
+    try:
+        run = run_proto_gene_evidence(
+            args.corpus,
+            null_runs=args.null_runs,
+            seed=args.seed,
+            disabled_features=disabled_features,
+        )
+    except RDKitUnavailableError as exc:
+        raise SystemExit(str(exc)) from exc
+    paths = write_proto_gene_evidence_outputs(run, args.output_dir)
+    print(f"model_version: {run.model_version}")
+    print(f"candidate_count: {run.summary['candidate_count']}")
+    print(f"enriched_over_null_count: {run.summary['enriched_over_null_count']}")
+    print(f"wrote evidence_summary_json to {paths.evidence_summary_json}")
+    print(f"wrote evidence_candidates_csv to {paths.evidence_candidates_csv}")
+    print(f"wrote null_model_csv to {paths.null_model_csv}")
+    print(f"wrote ablation_summary_csv to {paths.ablation_summary_csv}")
+    print(f"wrote proto_gene_evidence_report_md to {paths.proto_gene_evidence_report_md}")
+
+
 def _add_sweep_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--mutation-start", type=float, default=0.0)
     parser.add_argument("--mutation-stop", type=float, default=0.30)
@@ -715,6 +752,21 @@ def build_parser() -> argparse.ArgumentParser:
     proto_gene_parser.add_argument("--retention-threshold", type=float, default=0.60)
     _add_environment_argument(proto_gene_parser)
     proto_gene_parser.set_defaults(func=run_proto_gene_search_command)
+
+    evidence_parser = subparsers.add_parser(
+        "proto-gene-evidence",
+        help="evaluate proto-gene evidence against corpus, null controls, and ablations",
+    )
+    evidence_parser.add_argument("corpus", help="CSV corpus with expected model behavior")
+    evidence_parser.add_argument("--output-dir", default="outputs/proto_gene_evidence")
+    evidence_parser.add_argument("--null-runs", type=int, default=50)
+    evidence_parser.add_argument("--seed", type=int, default=None)
+    evidence_parser.add_argument("--disable-template", action="store_true")
+    evidence_parser.add_argument("--disable-catalysis", action="store_true")
+    evidence_parser.add_argument("--disable-repair", action="store_true")
+    evidence_parser.add_argument("--disable-protection", action="store_true")
+    evidence_parser.add_argument("--disable-separation", action="store_true")
+    evidence_parser.set_defaults(func=run_proto_gene_evidence_command)
 
     hypothesis_parser = subparsers.add_parser(
         "hypothesis-report",

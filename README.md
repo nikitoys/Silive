@@ -87,6 +87,17 @@ Run an RDKit evaluation after installing `.[chem]`:
 silive rdkit-evaluate "[Si]O[Si]O[Fe]O[Si]"
 ```
 
+Run the proto-gene evidence workflow after installing `.[chem]`:
+
+```bash
+silive proto-gene-evidence examples/proto_gene_evidence_corpus.csv \
+  --output-dir outputs/proto_gene_evidence \
+  --null-runs 50 \
+  --seed 42
+```
+
+This workflow checks expected model behavior against observed proto-gene/proto-genome outputs, symbolic null controls, and feature ablations. It reports computational evidence inside Silive only; it is not proof of real life, real chemistry, synthesis feasibility, or wet-lab behavior.
+
 Without editable install, commands can be run from the repository root with:
 
 ```bash
@@ -142,6 +153,7 @@ Feature docs:
 - [Proto-genes](docs/proto_genes.md)
 - [Proto-genome](docs/proto_genome.md)
 - [Proto-gene lineage](docs/proto_gene_lineage.md)
+- [Proto-gene evidence](docs/proto_gene_evidence.md)
 - [Reaction simulator](docs/reaction_simulator.md)
 - [Evolutionary search](docs/evolutionary_search.md)
 - [Hypothesis layer](docs/hypothesis_layer.md)
