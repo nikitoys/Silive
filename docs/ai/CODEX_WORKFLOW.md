@@ -11,6 +11,13 @@ starting implementation. If a command may expand scope, Codex must stop and ask
 for confirmation. Codex must not automatically move from `План` to `Выполняй`,
 and must not automatically move from one task to the next.
 
+State files:
+
+- `CODEX_PLAN.md`: durable planning snapshot and nearest tasks.
+- `CODEX_CURRENT.md`: current approved/stopped/cancelled/idle task state.
+- `CODEX_SESSION_LOG.md`: short journal of One-Task Loop cycles.
+- `CODEX_TASKS.md`: compact project board.
+
 ### Planning commands
 
 #### `План`
