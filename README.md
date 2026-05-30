@@ -100,9 +100,20 @@ Do not commit real secrets, tokens, credentials, private keys, or local `.env` f
 
 ## Documentation
 
+- Continue after clone: read [AGENTS.md](AGENTS.md), [PROJECT_GOAL.md](PROJECT_GOAL.md), and [CODEX_TASKS.md](CODEX_TASKS.md) first.
 - Developer runbook: [docs/ai/RUNBOOK.md](docs/ai/RUNBOOK.md)
 - Project overview: [docs/ai/PROJECT_OVERVIEW.md](docs/ai/PROJECT_OVERVIEW.md)
-- Codex instructions: [AGENTS.md](AGENTS.md)
+- Technical TODO: [docs/ai/TODO.md](docs/ai/TODO.md)
+- Decisions: [docs/ai/DECISIONS.md](docs/ai/DECISIONS.md)
+- MCP notes: [docs/ai/MCP.md](docs/ai/MCP.md)
+- Reusable Codex prompts: [docs/ai/PROMPTS.md](docs/ai/PROMPTS.md)
+
+Codex/MCP config templates:
+
+- `.codex/config.example.toml`
+- `.serena/project.example.yml`
+
+Real local `.codex/config.toml` and `.serena/project.yml` files are intentionally ignored.
 
 Feature docs:
 

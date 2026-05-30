@@ -1,5 +1,13 @@
 # Runbook
 
+## Continue After Clone
+
+1. Read `AGENTS.md`.
+2. Read `PROJECT_GOAL.md`.
+3. Read `CODEX_TASKS.md`.
+4. Use this runbook for commands.
+5. If MCP is needed, read `docs/ai/MCP.md` and copy example configs locally.
+
 ## Setup
 
 ```bash
@@ -58,3 +66,9 @@ This command is inferred from the standard `pyproject.toml` build backend and sh
 
 Sources: `pyproject.toml`.
 
+## Project Memory
+
+- Update `CODEX_TASKS.md` when task status changes.
+- Update `docs/ai/TODO.md` for technical follow-ups.
+- Update `docs/ai/DECISIONS.md` for durable decisions.
+- Update `docs/ai/MCP.md` when MCP setup changes.

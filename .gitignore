@@ -16,8 +16,12 @@ venv/
 # IDE
 .idea/
 .vscode/
-.codex/
-.serena/
+.codex/*
+!.codex/
+!.codex/config.example.toml
+.serena/*
+!.serena/
+!.serena/project.example.yml
 
 # OS
 .DS_Store

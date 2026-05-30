@@ -2,32 +2,59 @@
 
 Instructions for future Codex sessions in this repository.
 
+## Start Here
+
+Read these first, in order:
+
+1. `README.md` for install/run/test basics.
+2. `PROJECT_GOAL.md` for the research direction and success criteria.
+3. `CODEX_TASKS.md` for current work state.
+4. `docs/ai/RUNBOOK.md` for commands.
+5. `docs/ai/MCP.md` if MCP tools are needed.
+
 ## Purpose
 
-Silive is a Python sandbox for symbolic silicon/mineral proto-life simulation, search, and reporting. It is computational only; do not add wet-lab protocols or operational synthesis instructions.
+Silive is a Python sandbox for symbolic silicon/mineral proto-life simulation, search, and reporting. It is computational only; do not add wet-lab protocols, synthesis steps, quantities, temperatures, pressures, timings, or operational experimental instructions.
 
-## Map
+## Project Map
 
 - `src/silive/`: application package.
 - `src/silive/cli.py`: main CLI router.
-- `pyproject.toml`: package metadata, dependencies, pytest config, and `silive = silive.cli:main`.
+- `pyproject.toml`: package metadata, extras, pytest config, and `silive = silive.cli:main`.
 - `tests/`: pytest suite.
 - `docs/`: feature docs.
-- `docs/ai/PROJECT_OVERVIEW.md`: compact project map.
-- `docs/ai/RUNBOOK.md`: setup, run, test, build notes.
+- `docs/ai/`: Codex workflow, TODOs, MCP notes, prompts, and decisions.
+- `examples/rdkit_candidates.smi`: sample RDKit candidate input.
 
-## Rules
+## Work Rules
 
 - Keep code changes small and scoped.
+- Prefer existing module boundaries and test style.
 - Do not change model/scoring behavior, CLI commands, output schemas, or public APIs as incidental cleanup.
 - Preserve optional RDKit behavior: base install should work without RDKit.
-- Update README or `docs/ai/` only when the change affects setup, architecture, or developer workflow.
 - Do not add secrets, tokens, credentials, private keys, or real `.env` values.
-- Do not delete user files or run destructive git commands without explicit permission.
+- Do not delete project-memory docs unless the useful content is moved elsewhere.
+- Do not run destructive git commands or push without explicit permission.
+
+## Documentation Rules
+
+- Update `CODEX_TASKS.md` whenever task status changes.
+- Update `docs/ai/TODO.md` when adding or retiring technical follow-up work.
+- Add ADR entries to `docs/ai/DECISIONS.md` for durable project/process decisions.
+- Update `docs/ai/MCP.md` when adding, removing, or troubleshooting MCP usage.
+- Keep `PROJECT_GOAL.md` high-level and stable; do not turn it into a changelog.
+- Mark unverified facts as `TBD` or `requires verification`.
 
 ## Checks
 
-- Normal changes: run `pytest` after `python -m pip install -e '.[dev]'`.
-- CLI changes: also run `silive --help` and a relevant command smoke test.
-- RDKit changes: test with `python -m pip install -e '.[chem]'` when available; otherwise state that RDKit verification was skipped.
+- Normal changes: `uv run --extra dev pytest -q`.
+- Build check: `uv run --with build python -m build`.
+- CLI smoke: `uv run --extra dev silive --help`.
+- RDKit changes: test with `.[chem]` when available; otherwise state that RDKit verification was skipped.
 - If a check cannot run, report the exact missing dependency or command.
+
+## MCP Notes
+
+- Use MCP only when it helps. Do not commit real machine-specific `.codex/config.toml` or `.serena/project.yml`.
+- Keep examples in `.codex/config.example.toml` and `.serena/project.example.yml`.
+- Record MCP setup issues or useful workflows in `docs/ai/MCP.md`.

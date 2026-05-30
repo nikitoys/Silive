@@ -1,0 +1,15 @@
+# Example Serena project file for Silive.
+# Copy to .serena/project.yml locally if using Serena.
+# Do not commit real Serena cache, local project files, or private memories.
+
+project_name: "Silive"
+languages:
+  - python
+encoding: "utf-8"
+ignore_all_files_in_gitignore: true
+ignored_paths: []
+read_only: false
+excluded_tools: []
+included_optional_tools: []
+initial_prompt: ""
+

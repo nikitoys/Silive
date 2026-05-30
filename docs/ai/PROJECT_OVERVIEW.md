@@ -15,6 +15,10 @@ Silive is a Python package for symbolic silicon/mineral proto-life simulations. 
 
 Sources: `pyproject.toml`, `README.md`, `src/silive/cli.py`.
 
+## Direction
+
+See `PROJECT_GOAL.md` for the research goal, minimal proto-life functions, motif interpretations, and successful baseline definition.
+
 ## Project Map
 
 - `src/silive/model.py`: Level 1 proto-life simulation.
@@ -27,6 +31,9 @@ Sources: `pyproject.toml`, `README.md`, `src/silive/cli.py`.
 - `src/silive/hypothesis_layer.py`: Markdown report generation from search outputs.
 - `tests/`: pytest coverage for the main modules.
 - `docs/`: feature documentation.
+- `CODEX_TASKS.md`: live task board for Codex sessions.
+- `docs/ai/MCP.md`: MCP/tooling notes.
+- `docs/ai/PROMPTS.md`: reusable Codex prompts.
 - `examples/rdkit_candidates.smi`: sample candidate input.
 
 Sources: `src/silive/`, `tests/`, `docs/`, `examples/`.
@@ -36,4 +43,3 @@ Sources: `src/silive/`, `tests/`, `docs/`, `examples/`.
 - Dockerfile or compose file: TBD.
 - Required `.env` or `.env.example`: TBD.
 - `requirements.txt`: not used; dependencies are in `pyproject.toml`.
-
