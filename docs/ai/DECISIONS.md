@@ -41,3 +41,18 @@ ADR-style log for durable project/process decisions.
 - Consequences:
   - Baseline is cleaner for push.
   - Some useful project memory had to be restored later in compact form.
+
+## ADR-003: Automate Codex/MCP Bootstrap With Examples
+
+- Date: 2026-05-30
+- Status: accepted
+- Context:
+  - After clone, Codex/MCP setup should be repeatable without committing real local configs.
+  - Real `.codex/config.toml` and `.serena/project.yml` may be machine-specific.
+- Decision:
+  - Add `scripts/bootstrap-codex.sh` and `make codex-setup`.
+  - Commit `.codex/config.example.toml` and `.serena/project.example.yml`.
+  - Keep real local configs ignored.
+- Consequences:
+  - New sessions can bootstrap MCP setup faster.
+  - MCP workflow changes must update the script, `README.md`, and `docs/ai/MCP.md` together.

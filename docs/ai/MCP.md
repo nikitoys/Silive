@@ -2,6 +2,37 @@
 
 Do not commit real local MCP config files with machine-specific paths or secrets. Use examples only.
 
+## Bootstrap
+
+Use the bootstrap script after clone:
+
+```bash
+make codex-setup
+```
+
+It runs `scripts/bootstrap-codex.sh`, which:
+
+- finds the project root from any working directory;
+- creates `~/.codex`;
+- copies `.codex/config.example.toml` to `~/.codex/config.toml`;
+- backs up an existing `~/.codex/config.toml`;
+- checks `codex`, `node`, `npm`, `npx`, `uv`, `uvx`, and `serena`;
+- warms the configured MCP packages where possible.
+
+Some stdio MCP servers wait for a client; a warmup timeout is not automatically a failure.
+
+Verify from the shell if supported:
+
+```bash
+codex mcp list
+```
+
+Verify inside Codex:
+
+```text
+/mcp
+```
+
 ## context7
 
 - Purpose: fetch current library/framework/API documentation.
@@ -49,3 +80,9 @@ Do not commit real local MCP config files with machine-specific paths or secrets
   - The example project file should be copied/adapted locally if Serena is used.
 - Do not store: local cache, memories with private data, absolute machine paths.
 
+## Repository Rules
+
+- Commit `.codex/config.example.toml`, not `.codex/config.toml`.
+- Commit `.serena/project.example.yml`, not `.serena/project.yml`.
+- Keep real local credentials, cache, histories, and private memories out of git.
+- When changing MCP workflow, update `scripts/bootstrap-codex.sh`, this file, and `README.md`.

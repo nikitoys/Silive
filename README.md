@@ -37,6 +37,24 @@ Optional RDKit support:
 python -m pip install -e '.[chem]'
 ```
 
+## Continue After Clone
+
+```bash
+git clone <repo-url> Silive
+cd Silive
+make codex-setup
+codex
+```
+
+`make codex-setup` installs the example MCP config into `~/.codex/config.toml`, backing up an existing config first. Real local configs are not committed:
+
+- `~/.codex/config.toml` is machine-local.
+- `.codex/config.toml` is ignored.
+- `.serena/project.yml` is ignored.
+- tracked templates live in `.codex/config.example.toml` and `.serena/project.example.yml`.
+
+After Codex starts, check MCP status with `/mcp`, then read `AGENTS.md`, `PROJECT_GOAL.md`, and `CODEX_TASKS.md`.
+
 ## Run
 
 Show available commands:
@@ -112,6 +130,7 @@ Codex/MCP config templates:
 
 - `.codex/config.example.toml`
 - `.serena/project.example.yml`
+- Bootstrap script: `scripts/bootstrap-codex.sh`
 
 Real local `.codex/config.toml` and `.serena/project.yml` files are intentionally ignored.
 

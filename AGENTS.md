@@ -42,6 +42,7 @@ Silive is a Python sandbox for symbolic silicon/mineral proto-life simulation, s
 - Update `docs/ai/TODO.md` when adding or retiring technical follow-up work.
 - Add ADR entries to `docs/ai/DECISIONS.md` for durable project/process decisions.
 - Update `docs/ai/MCP.md` when adding, removing, or troubleshooting MCP usage.
+- After changing Codex/MCP workflow, update `scripts/bootstrap-codex.sh`, `docs/ai/MCP.md`, and `README.md` together.
 - Keep `PROJECT_GOAL.md` high-level and stable; do not turn it into a changelog.
 - Mark unverified facts as `TBD` or `requires verification`.
 
@@ -57,4 +58,5 @@ Silive is a Python sandbox for symbolic silicon/mineral proto-life simulation, s
 
 - Use MCP only when it helps. Do not commit real machine-specific `.codex/config.toml` or `.serena/project.yml`.
 - Keep examples in `.codex/config.example.toml` and `.serena/project.example.yml`.
+- `make codex-setup` runs `scripts/bootstrap-codex.sh` to install the example config into `~/.codex/config.toml`.
 - Record MCP setup issues or useful workflows in `docs/ai/MCP.md`.

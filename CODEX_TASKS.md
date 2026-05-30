@@ -14,7 +14,7 @@ Use this file as the live project board for Codex sessions. Keep it short and cu
 
 ## In Progress
 
-- Restore compact project-memory docs and Codex/MCP workflow notes after cleanup baseline.
+- None.
 
 ## Backlog
 
@@ -33,6 +33,8 @@ Use this file as the live project board for Codex sessions. Keep it short and cu
 - Preserved useful invalid symbolic candidates with risk flags.
 - Added hypothesis/report layer.
 - Cleaned baseline documentation and removed local tool configs / Node lockfile noise.
+- Restored compact project memory and Codex/MCP workflow notes.
+- Added Codex/MCP bootstrap workflow for post-clone setup.
 
 ## Blocked / Questions
 
