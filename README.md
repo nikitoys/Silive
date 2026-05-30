@@ -274,6 +274,15 @@ For plotting only:
 pip install -e .[plot]
 ```
 
+## Developer documentation
+
+- [Project overview](docs/ai/PROJECT_OVERVIEW.md)
+- [Architecture](docs/ai/ARCHITECTURE.md)
+- [Runbook](docs/ai/RUNBOOK.md)
+- [Technical audit](docs/ai/AUDIT.md)
+- [TODO](docs/ai/TODO.md)
+- [Decision log](docs/ai/DECISIONS.md)
+
 ## Run one simulation
 
 ```bash
