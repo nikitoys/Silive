@@ -26,6 +26,8 @@ Use this file as the live project board for Codex sessions. Keep it short and cu
 
 ## Done
 
+- Added persistent Codex operator API, command cheat sheet, and advisor/audit
+  modes.
 - Added minimal Codex One-Task Loop control files: `CODEX_PLAN.md`,
   `CODEX_CURRENT.md`, and `CODEX_SESSION_LOG.md`.
 - Added `docs/ai/CODEX_WORKFLOW.md` with short operator commands for planning,

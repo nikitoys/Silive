@@ -8,9 +8,14 @@ Read these first, in order:
 
 1. `README.md` for install/run/test basics.
 2. `PROJECT_GOAL.md` for the research direction and success criteria.
-3. `CODEX_TASKS.md` for current work state.
-4. `docs/ai/RUNBOOK.md` for commands.
-5. `docs/ai/MCP.md` if MCP tools are needed.
+3. `docs/ai/CODEX_WORKFLOW.md` for operator commands and One-Task Loop rules.
+4. `CODEX_COMMANDS.md` for the short operator command cheat sheet.
+5. `CODEX_PLAN.md` for the current planning snapshot.
+6. `CODEX_CURRENT.md` for the active task state.
+7. `CODEX_SESSION_LOG.md` for recent One-Task Loop cycles.
+8. `CODEX_TASKS.md` for current work state.
+9. `docs/ai/RUNBOOK.md` for commands.
+10. `docs/ai/MCP.md` if MCP tools are needed.
 
 ## Purpose
 

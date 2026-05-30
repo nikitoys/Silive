@@ -18,6 +18,20 @@ Loop cycles. Keep entries short and factual.
 
 ## Log
 
+### 2026-05-30 - Persist Codex operator API
+
+- Status: `completed`
+- Approved task: persist Codex operator API and add advisor/audit modes.
+- Scope: markdown-only Codex workflow, command, prompt, task, and session docs.
+- Files changed: `AGENTS.md`, `CODEX_COMMANDS.md`, `CODEX_CURRENT.md`,
+  `CODEX_SESSION_LOG.md`, `CODEX_TASKS.md`, `docs/ai/CODEX_WORKFLOW.md`,
+  `docs/ai/PROMPTS.md`.
+- Main check: markdown-only diff.
+- Negative checks: no `src/`, `tests/`, `examples/`, or generated outputs in
+  the diff.
+- Commit: this commit.
+- Notes: full pytest skipped because the change is strictly documentation-only.
+
 ### 2026-05-30 - Add Codex One-Task Loop control files
 
 - Status: `completed`

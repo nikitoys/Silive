@@ -8,6 +8,24 @@ Copy and adapt these prompts for future sessions.
 Inspect this repository without changing files. Identify the stack, entrypoints, package/test/build commands, key modules, documentation, CI, ignored files, and potential risks. Summarize what to read first and what checks are available.
 ```
 
+## Codex Fresh Session Start
+
+```text
+Read AGENTS.md first, then obey CODEX_COMMANDS.md and docs/ai/CODEX_WORKFLOW.md. If the user writes a short operator command, interpret it through Operator Commands. Read CODEX_PLAN.md, CODEX_CURRENT.md, CODEX_TASKS.md, and CODEX_SESSION_LOG.md before changing files.
+```
+
+## Advisor Mode
+
+```text
+Советник
+```
+
+## Audit Mode
+
+```text
+Аудит
+```
+
 ## Cleanup Project
 
 ```text
@@ -37,4 +55,3 @@ Update documentation only for the current change. Keep README concise. Update CO
 ```text
 Make a small, behavior-preserving refactor. Read the relevant tests and modules first. Do not change public CLI commands, output schemas, model assumptions, or optional RDKit behavior unless explicitly requested. Run pytest and a relevant CLI smoke test before summarizing.
 ```
-

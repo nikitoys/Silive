@@ -47,7 +47,7 @@ Do not touch:
 
 ## Last Completed Task
 
-- Task: add minimal control files for the Codex One-Task Loop.
+- Task: persist Codex operator API and add advisor/audit modes.
 - Phase: committed.
 - Checks: markdown-only diff; no `src/`, `tests/`, `examples/`, or generated
   outputs in the diff.

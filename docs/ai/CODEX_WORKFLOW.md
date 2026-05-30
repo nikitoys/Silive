@@ -13,6 +13,7 @@ and must not automatically move from one task to the next.
 
 State files:
 
+- `CODEX_COMMANDS.md`: short operator command cheat sheet.
 - `CODEX_PLAN.md`: durable planning snapshot and nearest tasks.
 - `CODEX_CURRENT.md`: current approved/stopped/cancelled/idle task state.
 - `CODEX_SESSION_LOG.md`: short journal of One-Task Loop cycles.
@@ -141,6 +142,36 @@ Codex must:
 - continue only the current `approved` or `stopped` task;
 - not take a new task;
 - follow the One-Task Loop.
+
+### Advisory commands
+
+#### `Советник`
+
+Codex must:
+
+- read `PROJECT_GOAL.md`, `CODEX_PLAN.md`, `CODEX_CURRENT.md`,
+  `CODEX_TASKS.md`, `CODEX_SESSION_LOG.md`, and
+  `docs/ai/CODEX_WORKFLOW.md`;
+- not change files;
+- assess the project state;
+- say whether the current task appears stalled;
+- say whether development is drifting into work for work's sake;
+- propose 3 management or research suggestions;
+- propose one best next operator step;
+- stop.
+
+#### `Аудит`
+
+Codex must:
+
+- not change files;
+- check consistency across `AGENTS.md`, `CODEX_COMMANDS.md`,
+  `docs/ai/CODEX_WORKFLOW.md`, `CODEX_PLAN.md`, `CODEX_CURRENT.md`,
+  `CODEX_TASKS.md`, and `CODEX_SESSION_LOG.md`;
+- find contradictions, stale status, bloated backlog, missing checks, or
+  unfinished cycles;
+- give a short report and recommendations;
+- stop.
 
 ### Default rule
 
