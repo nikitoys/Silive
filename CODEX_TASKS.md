@@ -26,6 +26,8 @@ Use this file as the live project board for Codex sessions. Keep it short and cu
 
 ## Done
 
+- Added `docs/ai/CODEX_WORKFLOW.md` with short operator commands for planning,
+  approval, execution, status, stop, cancel, continue, and commit flow.
 - Added proto-gene evidence framework with corpus expectations, null controls, ablation summaries, CLI, docs, and report outputs.
 - Stabilized repository line endings with `.gitattributes`.
 - Retired old CLI wrapper indirection; `silive.cli:main` is the stable entrypoint.
