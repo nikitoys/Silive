@@ -1,263 +1,25 @@
 # Silive
 
-![CI](https://github.com/nikitoys/Silive/actions/workflows/ci.yml/badge.svg)
+Silive is a small Python sandbox for testing symbolic silicon/mineral proto-life models. It scores symbolic chains, optionally evaluates RDKit molecules, runs search/simulation workflows, and writes simple reports.
 
-**Silive** is a small Python sandbox for testing a Level 1 chemical-logical model of silicon-like proto-life.
+The project is computational only. It does not provide synthesis protocols, lab parameters, quantities, temperatures, pressures, timings, or operational experimental instructions.
 
-The model is intentionally simple: it does not simulate atoms directly. Instead, it treats a proto-organism as a symbolic sequence plus a set of functional genes that modify probabilities.
+## Stack
 
-## Level 1 idea
-
-A sequence such as `ABABAB` represents a proto-code or mineral-polymer template.
-
-Pair stability controls whether the structure survives:
-
-| Pair | Stability |
-| --- | ---: |
-| A-B / B-A | 0.90 |
-| A-C / C-A | 0.60 |
-| B-C / C-B | 0.50 |
-| A-D / D-A | 0.20 |
-| C-D / D-C | 0.30 |
-| B-D / D-B | 0.25 |
-
-Genes are probability modifiers:
-
-| Gene | Meaning |
-| --- | --- |
-| `POL` | polymerase-like stitching; copy speed x5, but copying costs extra energy |
-| `SEP` | separation of copy; separation chance 0.7 |
-| `SHELL` | protective shell/matrix; adds a configurable survival bonus |
-| `REPAIR` | lowers mutation rate |
-| `CAT` | catalytic center; slightly stabilizes weak pairs |
-
-## Level 2 symbolic chemistry
-
-Level 2 evaluates concrete symbolic element chains against the proto-life functions used by the Level 1 simulator.
-
-Example:
-
-```bash
-silive evaluate-chain "Si-O-Si-O-Fe-O-Si"
-```
-
-The evaluator parses the chain, scores symbolic bond properties, maps those properties to proto-life functions, and prints a scorecard.
-
-Scored properties:
-
-| Property | Meaning |
-| --- | --- |
-| `stability` | scaffold persistence |
-| `template` | ability to act as a repeatable copying pattern |
-| `catalysis` | catalytic-center potential |
-| `repair` | defect-correction potential |
-| `separation` | ability to separate a copy without destroying the template |
-
-Function mapping:
-
-| Function | Main source |
-| --- | --- |
-| `POL` | template + catalysis |
-| `SEP` | separation |
-| `SHELL` | stability |
-| `REPAIR` | repair + template |
-| `CAT` | catalysis |
-
-The scorecard also shows missing functions and a rough viability class such as `weak_candidate`, `incomplete_proto_life_candidate`, `proto_life_candidate`, or `stable_proto_life_candidate`.
-
-## Experimental RDKit layer
-
-See `docs/rdkit.md`.
-
-```bash
-pip install -e .[chem]
-silive rdkit-evaluate "[Si]O[Si]O[Fe]O[Si]"
-
-## Symbolic environments
-
-`evaluate-chain`, `search-chain`, `chain-simulate`, `chain-report`, `environment-sweep`, and `niche-search` can apply simplified environmental modifiers:
-
-```bash
-silive evaluate-chain "Si-O-Si-O-Fe-O-Si" --environment hydrothermal
-```
-
-Supported environments:
-
-| Environment | stability | catalysis | repair | separation |
-| --- | ---: | ---: | ---: | ---: |
-| `hydrothermal` | x0.94 | x1.28 | x1.10 | x1.18 |
-| `dry_hot` | x0.78 | x1.12 | x0.70 | x1.30 |
-| `acidic` | x0.72 | x1.08 | x0.72 | x1.12 |
-| `alkaline` | x1.08 | x0.95 | x1.10 | x0.88 |
-| `cold` | x1.14 | x0.62 | x0.86 | x0.72 |
-
-The `template` property is intentionally not modified yet; this keeps the environment layer simple and lets the model isolate scaffold/catalysis/separation effects.
-
-## Search symbolic chains
-
-`silive search-chain` mutates a seed chain, evaluates every candidate with the same Level 2 scorecard, sorts by `viability_score`, prints the top candidates, and writes a CSV table.
-
-```bash
-silive search-chain \
-  --seed "Si-O-Si-O-Fe-O-Si" \
-  --rounds 1000 \
-  --top 20 \
-  --random-seed 42 \
-  --environment hydrothermal \
-  --output outputs/chain_search.csv
-```
-
-The CSV includes each candidate chain, environment, viability score, predicted functions, missing functions, symbolic properties, function scores, and mutation count.
-
-## Simulate a symbolic chain
-
-`silive chain-simulate` bridges Level 2 and Level 1. It evaluates a concrete symbolic chain, converts its predicted functions into Level 1 genes, runs repeated simulations, and reports aggregate survival/code preservation metrics.
-
-```bash
-silive chain-simulate "Si-O-Si-O-Fe-O-Si" \
-  --environment hydrothermal \
-  --generations 100 \
-  --runs 30 \
-  --seed 42
-```
-
-Output metrics:
-
-| Metric | Meaning |
-| --- | --- |
-| `survival_rate` | fraction of runs that did not go extinct |
-| `code_preservation_rate` | average fraction of final organisms that still match the start sequence |
-| `avg_final_population` | average population at the final generation |
-| `avg_final_stability` | average final Level 1 sequence stability |
-| `avg_best_fitness` | average best final fitness |
-
-## Generate a chain report
-
-`silive chain-report` creates a small report package for one concrete chain. It evaluates the chain, runs the Level 1 bridge simulation, and writes machine-readable plus human-readable outputs.
-
-```bash
-silive chain-report "Si-O-Si-O-Fe-O-Si" \
-  --environment hydrothermal \
-  --generations 100 \
-  --runs 30 \
-  --seed 42 \
-  --output-dir outputs/chain_report
-```
-
-Outputs:
-
-```text
-outputs/chain_report/chain_score.json
-outputs/chain_report/chain_score.csv
-outputs/chain_report/chain_report.txt
-outputs/chain_report/simulation_summary.csv
-```
-
-The report includes chain properties, predicted functions, missing functions, viability class, replacement recommendations, and simulation results.
-
-## Sweep environments
-
-`silive environment-sweep` evaluates and simulates one chain across every supported environment plus the unmodified `none` baseline. It writes CSV/JSON outputs and prints a ranking by `viability_score`, `survival_rate`, `code_preservation_rate`, and final population.
-
-```bash
-silive environment-sweep "Si-O-Si-O-Fe-O-Si" \
-  --generations 100 \
-  --runs 30 \
-  --seed 42 \
-  --output-dir outputs/env_sweep
-```
-
-Outputs:
-
-```text
-outputs/env_sweep/environment_sweep.csv
-outputs/env_sweep/environment_sweep.json
-```
-
-The sweep covers:
-
-```text
-none
-hydrothermal
-dry_hot
-acidic
-alkaline
-cold
-```
-
-The CSV includes symbolic properties, function scores, predicted/missing functions, viability class, viability score, survival rate, code preservation rate, and final population for each environment.
-
-## Search ecological niches
-
-`silive niche-search` mutates a seed chain, runs every candidate through all environments, and ranks concrete `chain + environment` pairs by `viability_score`, `survival_rate`, `code_preservation_rate`, and final population.
-
-```bash
-silive niche-search \
-  --seed "Si-O-Si-O-Fe-O-Si" \
-  --rounds 100 \
-  --top 20 \
-  --generations 100 \
-  --runs 30 \
-  --random-seed 42 \
-  --output-dir outputs/niche_search
-```
-
-Outputs:
-
-```text
-outputs/niche_search/niche_search.csv
-outputs/niche_search/niche_search.json
-```
-
-This is useful when the question is not only “which chain is good?” but “which chain becomes good in which environment?”.
-
-## Search heritable proto-gene motifs
-
-`silive proto-gene-search` ranks computational proto-gene candidates by template storage, copyability, separation, survival, function retention, lineage depth, and a combined `proto_gene_score`.
-
-Symbolic chain mode works without RDKit:
-
-```bash
-silive proto-gene-search \
-  --mode chain \
-  --seed-chain "Si-O-Si-O-Fe-O-Si" \
-  --rounds 200 \
-  --generations 10 \
-  --output-dir outputs/proto_gene_search \
-  --seed 42
-```
-
-RDKit mode reuses the symbolic graph, proto-gene, proto-genome, reaction opportunity, and mutation layers:
-
-```bash
-silive proto-gene-search examples/rdkit_candidates.smi \
-  --mode rdkit \
-  --generations 10 \
-  --population-size 20 \
-  --runs 10 \
-  --environment hydrothermal \
-  --output-dir outputs/proto_gene_search \
-  --seed 42
-```
-
-Outputs:
-
-```text
-outputs/proto_gene_search/proto_gene_candidates.csv
-outputs/proto_gene_search/lineage_history.csv
-outputs/proto_gene_search/proto_gene_summary.json
-outputs/proto_gene_search/best_proto_gene.json
-outputs/proto_gene_search/proto_gene_report.md
-```
-
-This layer is a computational symbolic simulator. It does not provide synthesis protocols, lab parameters, quantities, temperatures, pressures, timings, or operational experimental instructions.
+- Python `>=3.10`
+- Packaging: `setuptools` via `pyproject.toml`
+- CLI: `silive`, implemented in `src/silive/cli.py`
+- Tests: `pytest`
+- Optional plotting: `matplotlib`
+- Optional chemistry layer: `rdkit-pypi`
 
 ## Install
 
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
-pip install -e .[dev]
+python -m pip install --upgrade pip
+python -m pip install -e '.[dev]'
 ```
 
 On Windows PowerShell:
@@ -265,155 +27,91 @@ On Windows PowerShell:
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -e .[dev]
+python -m pip install --upgrade pip
+python -m pip install -e '.[dev]'
 ```
 
-For plotting only:
+Optional RDKit support:
 
 ```bash
-pip install -e .[plot]
+python -m pip install -e '.[chem]'
 ```
 
-## Developer documentation
+## Run
 
-- [Project overview](docs/ai/PROJECT_OVERVIEW.md)
-- [Architecture](docs/ai/ARCHITECTURE.md)
-- [Runbook](docs/ai/RUNBOOK.md)
-- [Technical audit](docs/ai/AUDIT.md)
-- [TODO](docs/ai/TODO.md)
-- [Decision log](docs/ai/DECISIONS.md)
+Show available commands:
 
-## Run one simulation
+```bash
+silive --help
+```
+
+Run one symbolic chain evaluation:
+
+```bash
+silive evaluate-chain "Si-O-Si-O-Fe-O-Si"
+```
+
+Run one Level 1 simulation:
 
 ```bash
 silive simulate --generations 100 --population-limit 100 --genes POL SEP SHELL REPAIR
 ```
 
-You can also tune mutation and shell strength:
+Run an environment-specific chain evaluation:
 
 ```bash
-silive simulate \
-  --genes POL SEP SHELL REPAIR \
-  --mutation-rate 0.12 \
-  --shell-bonus 0.20 \
-  --seed 42
+silive evaluate-chain "Si-O-Si-O-Fe-O-Si" --environment hydrothermal
 ```
 
-## Compare gene sets
+Run an RDKit evaluation after installing `.[chem]`:
 
 ```bash
-silive compare --generations 100 --runs 20
+silive rdkit-evaluate "[Si]O[Si]O[Fe]O[Si]"
 ```
 
-## Build a phase map
-
-`silive sweep` scans a grid of mutation rates and shell survival bonuses. It writes a CSV table with survival, code preservation, final population, stability, fitness, and a rough zone label.
+Without editable install, commands can be run from the repository root with:
 
 ```bash
-silive sweep \
-  --mutation-start 0.00 \
-  --mutation-stop 0.30 \
-  --mutation-steps 16 \
-  --shell-start 0.00 \
-  --shell-stop 0.40 \
-  --shell-steps 16 \
-  --genes POL SEP SHELL REPAIR \
-  --runs 30 \
-  --generations 100 \
-  --output phase_map.csv
+PYTHONPATH=src python3 -m silive.cli --help
 ```
 
-CSV columns:
+## Build
 
-| Column | Meaning |
-| --- | --- |
-| `mutation_rate` | base sequence mutation rate |
-| `shell_bonus` | extra survival chance from `SHELL` |
-| `survival_rate` | fraction of runs that did not go extinct |
-| `code_preservation_rate` | fraction of final organisms still matching the start sequence |
-| `avg_final_population` | average final population size |
-| `avg_final_stability` | average final pair stability |
-| `avg_best_fitness` | average best fitness at the end |
-| `zone` | rough classification: `dead`, `unstable`, `drifting`, `proto_life`, or `stable_life` |
-
-## Plot a phase map
+No release workflow is configured. A local package build can be checked with:
 
 ```bash
-silive plot phase_map.csv \
-  --metric survival_rate \
-  --output survival_rate.png
+python -m pip install build
+python -m build
 ```
 
-Supported metrics:
-
-```text
-survival_rate
-code_preservation_rate
-avg_final_population
-avg_final_stability
-avg_best_fitness
-```
-
-## Run the visual lab
-
-`silive lab` runs a sweep and creates default heatmaps in one command.
-
-```bash
-silive lab \
-  --mutation-steps 16 \
-  --shell-steps 16 \
-  --runs 30 \
-  --generations 100 \
-  --output-dir outputs
-```
-
-Outputs:
-
-```text
-outputs/phase_map.csv
-outputs/survival_rate.png
-outputs/code_preservation_rate.png
-```
-
-## Study the REPAIR gene
-
-`silive repair-study` compares `POL + SEP + SHELL` against `POL + SEP + SHELL + REPAIR` and writes CSV files with the delta in survival, code preservation, stability, fitness, and zone classification.
-
-```bash
-silive repair-study \
-  --mutation-steps 16 \
-  --shell-steps 16 \
-  --runs 30 \
-  --generations 100 \
-  --output-dir outputs/repair_study
-```
-
-Outputs:
-
-```text
-outputs/repair_study/without_repair.csv
-outputs/repair_study/with_repair.csv
-outputs/repair_study/repair_delta.csv
-outputs/repair_study/repair_summary.txt
-```
-
-## Run tests
+## Test
 
 ```bash
 pytest
 ```
 
-## Continuous integration
+GitHub Actions runs tests on Python 3.10, 3.11, and 3.12 and performs CLI smoke tests. RDKit commands are treated as optional in the base CI job.
 
-GitHub Actions runs tests on Python 3.10, 3.11, and 3.12. It also runs small `silive evaluate-chain`, `silive search-chain`, `silive chain-simulate`, `silive chain-report`, `silive environment-sweep`, `silive niche-search`, `silive lab`, and `silive repair-study` smoke tests and uploads the generated outputs as workflow artifacts.
+## Environment
 
-## What to test first
+No required `.env` file is currently documented or needed for normal local use.
 
-1. Can `POL + SEP + SHELL` maintain a sequence?
-2. How much mutation can the code survive without `REPAIR`?
-3. Does `POL` become useless without `SEP`?
-4. When does `CAT` help stabilize otherwise bad chemistry?
-5. Which gene knockout causes extinction first?
-6. Which concrete symbolic chains cover the missing functions?
-7. Do high-scoring symbolic chains actually survive in Level 1 simulation?
-8. Which chain + environment niches survive best?
+Do not commit real secrets, tokens, credentials, private keys, or local `.env` files.
+
+## Documentation
+
+- Developer runbook: [docs/ai/RUNBOOK.md](docs/ai/RUNBOOK.md)
+- Project overview: [docs/ai/PROJECT_OVERVIEW.md](docs/ai/PROJECT_OVERVIEW.md)
+- Codex instructions: [AGENTS.md](AGENTS.md)
+
+Feature docs:
+
+- [RDKit layer](docs/rdkit.md)
+- [RDKit search](docs/rdkit_search.md)
+- [Symbolic graph](docs/symbolic_graph.md)
+- [Proto-genes](docs/proto_genes.md)
+- [Proto-genome](docs/proto_genome.md)
+- [Proto-gene lineage](docs/proto_gene_lineage.md)
+- [Reaction simulator](docs/reaction_simulator.md)
+- [Evolutionary search](docs/evolutionary_search.md)
+- [Hypothesis layer](docs/hypothesis_layer.md)

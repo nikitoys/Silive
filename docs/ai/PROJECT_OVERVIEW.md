@@ -1,113 +1,39 @@
 # Project Overview
 
-## Summary
-
-Silive is a Python sandbox for exploring a simplified silicon/mineral proto-life model. It evaluates symbolic chains and optional RDKit molecular inputs, maps them to proto-life functions, runs simulations/searches, and generates reports.
-
-Sources:
-
-- `README.md`
-- `PROJECT_GOAL.md`
-- `CODEX_TASKS.md`
-- `pyproject.toml`
+Silive is a Python package for symbolic silicon/mineral proto-life simulations. It scores symbolic chains, optionally evaluates RDKit molecular inputs, runs search/simulation workflows, and writes reports.
 
 ## Stack
 
-- Language: Python.
-- Required Python version: `>=3.10`.
-- Packaging/build backend: `setuptools.build_meta`.
-- Project layout: `src/` package layout.
-- CLI framework: Python standard library `argparse`.
-- Test framework: `pytest`.
-- Plotting dependency: optional `matplotlib`.
-- Chemistry dependency: optional `rdkit-pypi`.
-- CI: GitHub Actions.
+- Python `>=3.10`
+- `setuptools` package defined by `pyproject.toml`
+- CLI entrypoint: `silive = silive.cli:main`
+- Tests: `pytest`
+- Optional extras:
+  - `dev`: `pytest`, `matplotlib`
+  - `plot`: `matplotlib`
+  - `chem`: `rdkit-pypi`
 
-Sources:
+Sources: `pyproject.toml`, `README.md`, `src/silive/cli.py`.
 
-- `pyproject.toml`
-- `src/silive/cli.py`
-- `.github/workflows/ci.yml`
-- `src/silive/plot.py`
-- `src/silive/rdkit_chemistry.py`
+## Project Map
 
-## Package Metadata
+- `src/silive/model.py`: Level 1 proto-life simulation.
+- `src/silive/chemistry.py`: symbolic chain parsing, scoring, mutation, search.
+- `src/silive/cli.py`: main command router.
+- `src/silive/rdkit_chemistry.py`: optional RDKit molecule parsing/evaluation.
+- `src/silive/symbolic_graph.py`: topology extraction, graph JSON, graph diff.
+- `src/silive/proto_genes.py` and `src/silive/proto_genome.py`: motif and minimal function scoring.
+- `src/silive/reaction_simulator.py` and `src/silive/evolutionary_search.py`: abstract reaction/evolution workflows.
+- `src/silive/hypothesis_layer.py`: Markdown report generation from search outputs.
+- `tests/`: pytest coverage for the main modules.
+- `docs/`: feature documentation.
+- `examples/rdkit_candidates.smi`: sample candidate input.
 
-Package name: `silive`.
-
-Current version: `0.1.0`.
-
-Description from package metadata: `Level 1 chemical-logical simulator for silicon-like proto-life`.
-
-Runtime dependencies are empty in the base package. Optional dependency groups are:
-
-- `dev`: `pytest>=8.0`, `matplotlib>=3.8`.
-- `plot`: `matplotlib>=3.8`.
-- `chem`: `rdkit-pypi>=2022.9.5`.
-
-Sources:
-
-- `pyproject.toml`
-
-## Main Capabilities
-
-The project currently includes:
-
-- Level 1 symbolic proto-organism simulation.
-- Level 2 symbolic chain scoring.
-- Chain simulation/report generation.
-- Environment sweep and niche search.
-- Optional RDKit molecule parsing and scoring.
-- Symbolic graph extraction and graph diff.
-- Proto-gene and proto-genome scoring.
-- Batch RDKit candidate search.
-- Abstract reaction scoring.
-- Evolutionary motif search.
-- Hypothesis/report generation.
-
-Sources:
-
-- `README.md`
-- `PROJECT_GOAL.md`
-- `CODEX_TASKS.md`
-- `src/silive/cli.py`
-- `src/silive/__init__.py`
-
-## Repository Shape
-
-Top-level project files:
-
-- `README.md`: user-facing project overview and CLI examples.
-- `pyproject.toml`: packaging, dependencies, console script, pytest config.
-- `.github/workflows/ci.yml`: CI test and smoke-run workflow.
-- `.gitignore`, `.gitattributes`: repository metadata.
-- `PROJECT_GOAL.md`: project intent and pipeline.
-- `CODEX_TASKS.md`: roadmap/status notes.
-
-Main directories:
-
-- `src/silive`: application package.
-- `tests`: pytest suite.
-- `docs`: feature documentation.
-- `examples`: sample candidate input files.
-
-Sources:
-
-- repository file tree
-- `pyproject.toml`
-- `.github/workflows/ci.yml`
+Sources: `src/silive/`, `tests/`, `docs/`, `examples/`.
 
 ## Not Found
 
-The following were not found during analysis:
-
-- `Dockerfile`.
-- Docker Compose files.
-- `requirements.txt`.
-- `package.json`.
-- `.env` or env example files.
-
-Sources:
-
-- repository file tree
+- Dockerfile or compose file: TBD.
+- Required `.env` or `.env.example`: TBD.
+- `requirements.txt`: not used; dependencies are in `pyproject.toml`.
 

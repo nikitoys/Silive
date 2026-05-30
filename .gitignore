@@ -7,6 +7,7 @@ __pycache__/
 htmlcov/
 dist/
 build/
+outputs/
 
 # Virtual environments
 .venv/
@@ -15,7 +16,18 @@ venv/
 # IDE
 .idea/
 .vscode/
+.codex/
+.serena/
 
 # OS
 .DS_Store
 Thumbs.db
+
+# Local files
+.env
+.env.*
+!.env.example
+*.log
+*.tmp
+*.swp
+~
